@@ -326,35 +326,35 @@ export function AdminDashboard({
     <div className="space-y-6">
       {/* KPI Summary Cards */}
       <section aria-label="สรุปภาพรวมระบบ" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4">
+          <p className="text-xs font-medium text-[var(--birthday-muted)]">
             ลูกค้าจำลองทั้งหมด
           </p>
-          <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <p className="mt-1 text-2xl font-semibold text-[var(--birthday-text)]">
             {stats.total}
           </p>
         </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4">
+          <p className="text-xs font-medium text-[var(--birthday-muted)]">
             เกิดวันนี้ &amp; พร้อมส่ง
           </p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-700 dark:text-emerald-400">
+          <p className="mt-1 text-2xl font-semibold text-[var(--birthday-success)]">
             {stats.eligibleToday}
           </p>
         </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4">
+          <p className="text-xs font-medium text-[var(--birthday-muted)]">
             ไม่ยินยอม / ยกเลิกแล้ว
           </p>
-          <p className="mt-1 text-2xl font-semibold text-amber-700 dark:text-amber-400">
+          <p className="mt-1 text-2xl font-semibold text-[var(--birthday-primary)]">
             {stats.blocked}
           </p>
         </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4">
+          <p className="text-xs font-medium text-[var(--birthday-muted)]">
             ประวัติการส่ง (Log)
           </p>
-          <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+          <p className="mt-1 text-2xl font-semibold text-[var(--birthday-text)]">
             {stats.logsCount}
           </p>
         </div>
@@ -364,16 +364,16 @@ export function AdminDashboard({
         <div
           role="status"
           aria-live="polite"
-          className="flex items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100"
+          className="flex items-center justify-between gap-3 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-soft)] px-4 py-3 text-sm text-[var(--birthday-text)]"
         >
           <span className="flex items-center gap-2">
-            <CircleCheck size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+            <CircleCheck size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-[var(--birthday-success)]" />
             <span>{bannerMessage}</span>
           </span>
           <button
             type="button"
             onClick={() => setBannerMessage(null)}
-            className="rounded px-2 py-1 text-xs font-medium hover:bg-emerald-200/60 dark:hover:bg-emerald-900"
+            className="rounded px-2 py-1 text-xs font-medium text-[var(--birthday-primary)] hover:bg-[var(--birthday-surface)]/70"
           >
             ปิด
           </button>
@@ -381,11 +381,11 @@ export function AdminDashboard({
       )}
 
       {/* Accessible Tabs */}
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+      <section className="rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-5 sm:p-6">
         <div
           role="tablist"
           aria-label="หมวดหมู่ข้อมูลแอดมิน"
-          className="admin-tablist mb-5 flex gap-6 border-b border-zinc-200 dark:border-zinc-800"
+          className="admin-tablist mb-5 flex gap-6 border-b border-[var(--birthday-border)]"
         >
           <button
             type="button"
@@ -393,7 +393,7 @@ export function AdminDashboard({
             id="tab-customers"
             aria-selected={activeTab === "customers"}
             onClick={() => setActiveTab("customers")}
-            className="admin-tab min-h-11 px-1 pb-3 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-zinc-400 dark:hover:text-zinc-100"
+            className="admin-tab min-h-11 px-1 pb-3 text-sm font-medium text-[var(--birthday-muted)] transition-colors hover:text-[var(--birthday-text)] aria-selected:text-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-[var(--birthday-primary)]"
           >
             รายชื่อลูกค้าจำลอง ({customers.length})
           </button>
@@ -403,7 +403,7 @@ export function AdminDashboard({
             id="tab-logs"
             aria-selected={activeTab === "logs"}
             onClick={() => setActiveTab("logs")}
-            className="admin-tab min-h-11 px-1 pb-3 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-zinc-400 dark:hover:text-zinc-100"
+            className="admin-tab min-h-11 px-1 pb-3 text-sm font-medium text-[var(--birthday-muted)] transition-colors hover:text-[var(--birthday-text)] aria-selected:text-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-[var(--birthday-primary)]"
           >
             ประวัติการส่งอีเมล ({emailLogs.length})
           </button>
@@ -413,7 +413,7 @@ export function AdminDashboard({
             id="tab-test"
             aria-selected={activeTab === "test"}
             onClick={() => setActiveTab("test")}
-            className="admin-tab min-h-11 px-1 pb-3 text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-blue-600 dark:text-zinc-400 dark:hover:text-zinc-100"
+            className="admin-tab min-h-11 px-1 pb-3 text-sm font-medium text-[var(--birthday-muted)] transition-colors hover:text-[var(--birthday-text)] aria-selected:text-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-[var(--birthday-primary)]"
           >
             โหมดทดสอบ (Test Mode)
           </button>
@@ -431,7 +431,7 @@ export function AdminDashboard({
               <div className="flex flex-1 flex-col gap-1">
                 <label
                   htmlFor="customer-search"
-                  className="text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                  className="text-xs font-medium text-[var(--birthday-text)]"
                 >
                   ค้นหาชื่อหรืออีเมล
                 </label>
@@ -441,13 +441,13 @@ export function AdminDashboard({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="พิมพ์ชื่อหรืออีเมลลูกค้าจำลอง..."
-                  className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                  className="min-h-11 w-full rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3.5 text-sm text-[var(--birthday-text)] outline-none focus-visible:border-[var(--birthday-primary)] focus-visible:ring-2 focus-visible:ring-[var(--birthday-primary)]"
                 />
               </div>
               <div className="flex flex-col gap-1 sm:w-56">
                 <label
                   htmlFor="customer-filter"
-                  className="text-xs font-medium text-zinc-700 dark:text-zinc-300"
+                  className="text-xs font-medium text-[var(--birthday-text)]"
                 >
                   กรองตามสถานะ
                 </label>
@@ -457,7 +457,7 @@ export function AdminDashboard({
                   onChange={(e) =>
                     setStatusFilter(e.target.value as StatusFilter)
                   }
-                  className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                  className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)] outline-none focus-visible:border-[var(--birthday-primary)] focus-visible:ring-2 focus-visible:ring-[var(--birthday-primary)]"
                 >
                   <option value="all">ทั้งหมด ({customers.length})</option>
                   <option value="eligible">
@@ -475,14 +475,14 @@ export function AdminDashboard({
             <button
               type="button"
               onClick={openAddDialog}
-              className="min-h-11 shrink-0 rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="min-h-11 shrink-0 rounded-lg bg-[var(--birthday-primary)] px-4 py-2.5 text-sm font-medium text-[var(--birthday-on-primary)] transition-colors hover:bg-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
             >
               + เพิ่มลูกค้าจำลอง
             </button>
           </div>
 
           {filteredCustomers.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+            <div className="rounded-xl border border-dashed border-[var(--birthday-border)] px-4 py-10 text-center text-sm text-[var(--birthday-muted)]">
               ไม่พบข้อมูลลูกค้าที่ตรงกับเงื่อนไขการค้นหา
             </div>
           ) : (
@@ -490,13 +490,13 @@ export function AdminDashboard({
               tabIndex={0}
               role="region"
               aria-labelledby="customers-table-caption"
-              className="admin-table-wrapper rounded-xl border border-zinc-200 dark:border-zinc-800"
+              className="admin-table-wrapper rounded-xl border border-[var(--birthday-border)]"
             >
               <table className="admin-responsive-table customers-table w-full text-left text-sm">
                 <caption id="customers-table-caption" className="sr-only">
                   รายชื่อลูกค้าจำลองสำหรับระบบส่งอีเมลอวยพรวันเกิด
                 </caption>
-                <thead className="bg-zinc-100 text-xs font-semibold text-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200">
+                <thead className="bg-[var(--birthday-bg)] text-xs font-semibold text-[var(--birthday-text)]">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       ชื่อ-นามสกุล
@@ -518,7 +518,7 @@ export function AdminDashboard({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-[var(--birthday-border)]">
                   {filteredCustomers.map((customer) => {
                     const bdayToday = isBirthdayToday(
                       customer,
@@ -529,25 +529,25 @@ export function AdminDashboard({
                     return (
                       <tr
                         key={customer.id}
-                        className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
+                        className="hover:bg-[var(--birthday-bg)]/60"
                       >
                         <th
                           scope="row"
-                          className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100"
+                          className="px-4 py-3 font-medium text-[var(--birthday-text)]"
                         >
                           <div className="flex flex-wrap items-center gap-2">
                             <span>{customer.full_name}</span>
                             {bdayToday && (
-                              <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                              <span className="inline-flex items-center rounded-full bg-[var(--birthday-soft)] px-2 py-0.5 text-xs font-medium text-[var(--birthday-primary)]">
                                 เกิดวันนี้
                               </span>
                             )}
                           </div>
                         </th>
-                        <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                        <td className="px-4 py-3 text-[var(--birthday-muted)]">
                           {customer.email}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-zinc-700 dark:text-zinc-300">
+                        <td className="px-4 py-3 whitespace-nowrap text-[var(--birthday-muted)]">
                           {formatThaiBirthday(
                             customer.birth_month,
                             customer.birth_day
@@ -555,23 +555,23 @@ export function AdminDashboard({
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {customer.consent_given ? (
-                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                              ✓ ยินยอม
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-success)]">
+                              ยินยอม
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                              ✕ ไม่ยินยอม
+                            <span className="inline-flex items-center rounded-full bg-[var(--birthday-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-muted)]">
+                              ไม่ยินยอม
                             </span>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {customer.unsubscribed ? (
-                            <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-200">
-                              ✕ ยกเลิกแล้ว
+                            <span className="inline-flex items-center rounded-full bg-[var(--birthday-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-error)]">
+                              ยกเลิกแล้ว
                             </span>
                           ) : (
-                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                              ✓ รับอีเมล
+                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-success)]">
+                              รับอีเมล
                             </span>
                           )}
                         </td>
@@ -580,14 +580,14 @@ export function AdminDashboard({
                             <button
                               type="button"
                               onClick={() => openEditDialog(customer)}
-                              className="min-h-9 rounded-md border border-zinc-300 px-3 py-1 text-xs font-medium text-zinc-800 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-blue-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                              className="min-h-9 rounded-md border border-[var(--birthday-border)] px-3 py-1 text-xs font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)] focus-visible:outline-2 focus-visible:outline-[var(--birthday-primary)]"
                             >
                               แก้ไข
                             </button>
                             <button
                               type="button"
                               onClick={() => openDeleteDialog(customer)}
-                              className="min-h-9 rounded-md border border-red-300 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-red-600 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/60"
+                              className="min-h-9 rounded-md border border-[var(--birthday-soft)] px-3 py-1 text-xs font-medium text-[var(--birthday-error)] hover:bg-[var(--birthday-soft)] focus-visible:outline-2 focus-visible:outline-[var(--birthday-error)]"
                             >
                               ลบ
                             </button>
@@ -610,22 +610,21 @@ export function AdminDashboard({
           hidden={activeTab !== "logs"}
         >
           {emailLogs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-zinc-300 px-4 py-10 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
-              ยังไม่มีประวัติการส่งอีเมล (จะเริ่มบันทึกเมื่อทดลองส่งในขั้นที่ 6
-              และส่งอัตโนมัติในขั้นที่ 8)
+            <div className="rounded-xl border border-dashed border-[var(--birthday-border)] px-4 py-10 text-center text-sm text-[var(--birthday-muted)]">
+              ยังไม่มีประวัติการส่งอีเมล
             </div>
           ) : (
             <div
               tabIndex={0}
               role="region"
               aria-labelledby="logs-table-caption"
-              className="admin-table-wrapper rounded-xl border border-zinc-200 dark:border-zinc-800"
+              className="admin-table-wrapper rounded-xl border border-[var(--birthday-border)]"
             >
               <table className="admin-responsive-table logs-table w-full text-left text-sm">
                 <caption id="logs-table-caption" className="sr-only">
                   ประวัติการส่งอีเมลอวยพรวันเกิด
                 </caption>
-                <thead className="bg-zinc-100 text-xs font-semibold text-zinc-700 dark:bg-zinc-800/90 dark:text-zinc-200">
+                <thead className="bg-[var(--birthday-bg)] text-xs font-semibold text-[var(--birthday-text)]">
                   <tr>
                     <th scope="col" className="px-4 py-3">
                       วันเวลาที่ส่ง
@@ -650,56 +649,56 @@ export function AdminDashboard({
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody className="divide-y divide-[var(--birthday-border)]">
                   {emailLogs.map((log) => (
                     <tr
                       key={log.id}
-                      className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40"
+                      className="hover:bg-[var(--birthday-bg)]/60"
                     >
                       <th
                         scope="row"
-                        className="px-4 py-3 whitespace-nowrap font-medium text-zinc-900 dark:text-zinc-100"
+                        className="px-4 py-3 whitespace-nowrap font-medium text-[var(--birthday-text)]"
                       >
                         {formatBangkokDateTime(log.sent_at)}
                       </th>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="px-4 py-3 text-[var(--birthday-muted)]">
                         {log.customers?.full_name ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="px-4 py-3 text-[var(--birthday-muted)]">
                         {log.recipient_email}
                       </td>
-                      <td className="px-4 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="px-4 py-3 text-[var(--birthday-muted)]">
                         {log.sent_year}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {log.is_test ? (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+                          <span className="inline-flex items-center rounded-full bg-[var(--birthday-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-primary)]">
                             ทดสอบ
                           </span>
                         ) : (
-                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                          <span className="inline-flex items-center rounded-full bg-[var(--birthday-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-text)]">
                             ส่งจริง
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {log.status === "sent" && (
-                          <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-                            ✓ ส่งสำเร็จ
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-success)]">
+                            ส่งสำเร็จ
                           </span>
                         )}
                         {log.status === "test" && (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-950 dark:text-amber-200">
-                            ✓ ส่งทดสอบแล้ว
+                          <span className="inline-flex items-center rounded-full bg-[var(--birthday-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-primary)]">
+                            ส่งทดสอบแล้ว
                           </span>
                         )}
                         {log.status === "failed" && (
-                          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:bg-red-950 dark:text-red-200">
-                            ✕ ล้มเหลว
+                          <span className="inline-flex items-center rounded-full bg-[var(--birthday-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--birthday-error)]">
+                            ล้มเหลว
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-xs text-zinc-600 dark:text-zinc-400">
+                      <td className="px-4 py-3 text-xs text-[var(--birthday-muted)]">
                         {log.error_message || log.provider_message_id || "—"}
                       </td>
                     </tr>
@@ -719,11 +718,11 @@ export function AdminDashboard({
         >
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Dry-Run / Preview */}
-            <section className="rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            <section className="rounded-xl border border-[var(--birthday-border)] p-5">
+              <h2 className="text-base font-semibold text-[var(--birthday-text)]">
                 1. ดูรายชื่อผู้มีสิทธิ์รับอีเมล (Preview / Dry-Run)
               </h2>
-              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              <p className="mt-1 text-xs text-[var(--birthday-muted)]">
                 จำลองวันที่เพื่อตรวจสอบว่าใครเข้าเกณฑ์ได้รับอีเมลบ้าง
                 (ยังไม่ยิงอีเมลออกจริง)
               </p>
@@ -731,14 +730,14 @@ export function AdminDashboard({
               <form onSubmit={handleRunPreview} className="mt-4 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
-                    <label htmlFor="preview-month" className="text-xs font-medium">
+                    <label htmlFor="preview-month" className="text-xs font-medium text-[var(--birthday-text)]">
                       เดือนที่จำลอง
                     </label>
                     <select
                       id="preview-month"
                       value={previewMonth}
                       onChange={(e) => setPreviewMonth(Number(e.target.value))}
-                      className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                      className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
                     >
                       {THAI_MONTHS.map((name, idx) => (
                         <option key={name} value={idx + 1}>
@@ -749,14 +748,14 @@ export function AdminDashboard({
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label htmlFor="preview-day" className="text-xs font-medium">
+                    <label htmlFor="preview-day" className="text-xs font-medium text-[var(--birthday-text)]">
                       วันที่จำลอง
                     </label>
                     <select
                       id="preview-day"
                       value={clampedPreviewDay}
                       onChange={(e) => setPreviewDay(Number(e.target.value))}
-                      className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                      className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
                     >
                       {Array.from(
                         { length: maxPreviewDays },
@@ -773,7 +772,7 @@ export function AdminDashboard({
                 <button
                   type="submit"
                   disabled={isPreviewing}
-                  className="min-h-11 w-full rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                  className="min-h-11 w-full rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-bg)] px-4 py-2 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-soft)] disabled:opacity-60"
                 >
                   {isPreviewing
                     ? "กำลังตรวจสอบรายชื่อ..."
@@ -784,7 +783,7 @@ export function AdminDashboard({
               {previewError && (
                 <div
                   role="status"
-                  className="mt-4 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+                  className="mt-4 flex items-center gap-2 rounded-lg bg-[var(--birthday-soft)] px-3.5 py-2.5 text-sm text-[var(--birthday-error)]"
                 >
                   <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
                   <span>{previewError}</span>
@@ -792,8 +791,8 @@ export function AdminDashboard({
               )}
 
               {previewResult && (
-                <div className="mt-4 space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3.5 text-sm dark:border-zinc-800 dark:bg-zinc-950">
-                  <p className="font-medium text-zinc-900 dark:text-zinc-100">
+                <div className="mt-4 space-y-2 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-bg)] p-3.5 text-sm">
+                  <p className="font-medium text-[var(--birthday-text)]">
                     วันที่จำลอง:{" "}
                     {formatThaiBirthday(
                       previewResult.targetDate.month,
@@ -806,7 +805,7 @@ export function AdminDashboard({
                     )
                   </p>
                   {previewResult.eligible.length === 0 ? (
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                    <p className="text-xs text-[var(--birthday-muted)]">
                       ไม่มีลูกค้าที่เข้าเกณฑ์ส่งอีเมลในวันที่เลือก
                     </p>
                   ) : (
@@ -814,10 +813,10 @@ export function AdminDashboard({
                       {previewResult.eligible.map((item) => (
                         <li
                           key={item.id}
-                          className="flex items-center justify-between rounded bg-white px-2.5 py-1.5 dark:bg-zinc-900"
+                          className="flex items-center justify-between rounded bg-[var(--birthday-surface)] px-2.5 py-1.5"
                         >
-                          <span className="font-medium">{item.full_name}</span>
-                          <span className="text-zinc-500">{item.email}</span>
+                          <span className="font-medium text-[var(--birthday-text)]">{item.full_name}</span>
+                          <span className="text-[var(--birthday-muted)]">{item.email}</span>
                         </li>
                       ))}
                     </ul>
@@ -827,11 +826,11 @@ export function AdminDashboard({
             </section>
 
             {/* Test Send */}
-            <section className="rounded-xl border border-zinc-200 p-5 dark:border-zinc-800">
-              <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+            <section className="rounded-xl border border-[var(--birthday-border)] p-5">
+              <h2 className="text-base font-semibold text-[var(--birthday-text)]">
                 2. ส่งอีเมลทดสอบจริง ([TEST] Send)
               </h2>
-              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
+              <p className="mt-1 text-xs text-[var(--birthday-muted)]">
                 เลือกลูกค้าจำลอง 1 คนแล้วส่งเข้าอีเมลผู้ทดสอบ (หัวข้อขึ้นต้นด้วย{" "}
                 <code>[TEST]</code> และบันทึกเป็น <code>is_test = true</code>)
               </p>
@@ -840,7 +839,7 @@ export function AdminDashboard({
                 <div className="flex flex-col gap-1">
                   <label
                     htmlFor="test-customer-select"
-                    className="text-xs font-medium"
+                    className="text-xs font-medium text-[var(--birthday-text)]"
                   >
                     เลือกลูกค้าจำลองสำหรับสร้างข้อความอวยพร
                   </label>
@@ -849,7 +848,7 @@ export function AdminDashboard({
                     value={effectiveTestCustomerId}
                     onChange={(e) => setTestCustomerId(e.target.value)}
                     required
-                    className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                    className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
                   >
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -862,7 +861,7 @@ export function AdminDashboard({
                 <div className="flex flex-col gap-1">
                   <label
                     htmlFor="test-recipient-email"
-                    className="text-xs font-medium"
+                    className="text-xs font-medium text-[var(--birthday-text)]"
                   >
                     อีเมลผู้ทดสอบ (เช่น อีเมลที่ใช้สมัคร Resend)
                   </label>
@@ -875,14 +874,14 @@ export function AdminDashboard({
                     value={testRecipientEmail}
                     onChange={(e) => setTestRecipientEmail(e.target.value)}
                     placeholder="your-resend-email@example.com"
-                    className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                    className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSendingTest || customers.length === 0}
-                  className="min-h-11 w-full rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                  className="min-h-11 w-full rounded-lg bg-[var(--birthday-primary)] px-4 py-2 text-sm font-medium text-[var(--birthday-on-primary)] hover:bg-[var(--birthday-primary-hover)] disabled:opacity-60"
                 >
                   {isSendingTest
                     ? "กำลังส่งอีเมลทดสอบ..."
@@ -894,14 +893,14 @@ export function AdminDashboard({
                 <div
                   role="status"
                   aria-live="polite"
-                  className={`mt-4 flex items-start gap-2 rounded-lg border px-3.5 py-2.5 text-sm ${
+                  className={`mt-4 flex items-start gap-2 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-soft)] px-3.5 py-2.5 text-sm ${
                     testSendMessage.type === "success"
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-100"
-                      : "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+                      ? "text-[var(--birthday-text)]"
+                      : "text-[var(--birthday-error)]"
                   }`}
                 >
                   {testSendMessage.type === "success" ? (
-                    <CircleCheck size={18} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />
+                    <CircleCheck size={18} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0 text-[var(--birthday-success)]" />
                   ) : (
                     <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />
                   )}
@@ -921,17 +920,17 @@ export function AdminDashboard({
           e.preventDefault();
           closeFormDialog();
         }}
-        className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-900 shadow-xl backdrop:bg-black/60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+        className="m-auto w-[calc(100%-2rem)] max-w-lg rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-6 text-[var(--birthday-text)] shadow-lg backdrop:bg-black/40"
       >
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 id="customer-dialog-title" className="text-lg font-semibold">
+          <h2 id="customer-dialog-title" className="text-lg font-semibold text-[var(--birthday-text)]">
             {editingCustomer ? "แก้ไขข้อมูลลูกค้าจำลอง" : "เพิ่มลูกค้าจำลองใหม่"}
           </h2>
           <button
             type="button"
             onClick={closeFormDialog}
             aria-label="ปิดหน้าต่าง"
-            className="min-h-9 min-w-9 rounded-lg text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="min-h-9 min-w-9 rounded-lg text-sm text-[var(--birthday-muted)] hover:bg-[var(--birthday-bg)]"
           >
             ✕
           </button>
@@ -950,7 +949,7 @@ export function AdminDashboard({
             <div
               role="status"
               aria-live="polite"
-              className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+              className="flex items-center gap-2 rounded-lg bg-[var(--birthday-soft)] px-3.5 py-2.5 text-sm text-[var(--birthday-error)]"
             >
               <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
               <span>{formError}</span>
@@ -958,8 +957,8 @@ export function AdminDashboard({
           )}
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="form-full-name" className="text-sm font-medium">
-              ชื่อ-นามสกุล (จำลอง) <span className="text-red-600">*</span>
+            <label htmlFor="form-full-name" className="text-sm font-medium text-[var(--birthday-text)]">
+              ชื่อ-นามสกุล (จำลอง) <span className="text-[var(--birthday-primary)]">*</span>
             </label>
             <input
               id="form-full-name"
@@ -969,13 +968,13 @@ export function AdminDashboard({
               autoFocus
               defaultValue={editingCustomer?.full_name ?? ""}
               placeholder="เช่น สมชาย ใจดี"
-              className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)] outline-none focus-visible:border-[var(--birthday-primary)] focus-visible:ring-2 focus-visible:ring-[var(--birthday-primary)]"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="form-email" className="text-sm font-medium">
-              อีเมล (จำลอง) <span className="text-red-600">*</span>
+            <label htmlFor="form-email" className="text-sm font-medium text-[var(--birthday-text)]">
+              อีเมล (จำลอง) <span className="text-[var(--birthday-primary)]">*</span>
             </label>
             <input
               id="form-email"
@@ -986,21 +985,21 @@ export function AdminDashboard({
               autoCapitalize="none"
               defaultValue={editingCustomer?.email ?? ""}
               placeholder="somchai.mock@example.com"
-              className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+              className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)] outline-none focus-visible:border-[var(--birthday-primary)] focus-visible:ring-2 focus-visible:ring-[var(--birthday-primary)]"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor="form-birth-month" className="text-sm font-medium">
-                เดือนเกิด <span className="text-red-600">*</span>
+              <label htmlFor="form-birth-month" className="text-sm font-medium text-[var(--birthday-text)]">
+                เดือนเกิด <span className="text-[var(--birthday-primary)]">*</span>
               </label>
               <select
                 id="form-birth-month"
                 name="birth_month"
                 value={formMonth}
                 onChange={(e) => setFormMonth(Number(e.target.value))}
-                className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)] outline-none focus-visible:border-[var(--birthday-primary)] focus-visible:ring-2 focus-visible:ring-[var(--birthday-primary)]"
               >
                 {THAI_MONTHS.map((name, idx) => (
                   <option key={name} value={idx + 1}>
@@ -1011,15 +1010,15 @@ export function AdminDashboard({
             </div>
 
             <div className="flex flex-col gap-1">
-              <label htmlFor="form-birth-day" className="text-sm font-medium">
-                วันที่เกิด <span className="text-red-600">*</span>
+              <label htmlFor="form-birth-day" className="text-sm font-medium text-[var(--birthday-text)]">
+                วันที่เกิด <span className="text-[var(--birthday-primary)]">*</span>
               </label>
               <select
                 id="form-birth-day"
                 name="birth_day"
                 value={clampedDay}
                 onChange={(e) => setFormDay(Number(e.target.value))}
-                className="min-h-11 rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                className="min-h-11 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)] outline-none focus-visible:border-[var(--birthday-primary)] focus-visible:ring-2 focus-visible:ring-[var(--birthday-primary)]"
               >
                 {Array.from({ length: maxDays }, (_, idx) => idx + 1).map(
                   (d) => (
@@ -1032,23 +1031,23 @@ export function AdminDashboard({
             </div>
           </div>
 
-          <div className="space-y-2.5 rounded-xl border border-zinc-200 p-3.5 dark:border-zinc-800">
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+          <div className="space-y-2.5 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-bg)]/50 p-3.5">
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--birthday-text)]">
               <input
                 type="checkbox"
                 name="consent_given"
                 defaultChecked={editingCustomer?.consent_given ?? true}
-                className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100"
+                className="h-4 w-4 accent-[var(--birthday-primary)]"
               />
               <span>ลูกค้าให้ความยินยอมรับอีเมลอวยพร (Consent)</span>
             </label>
 
-            <label className="flex cursor-pointer items-center gap-2.5 text-sm">
+            <label className="flex cursor-pointer items-center gap-2.5 text-sm text-[var(--birthday-text)]">
               <input
                 type="checkbox"
                 name="unsubscribed"
                 defaultChecked={editingCustomer?.unsubscribed ?? false}
-                className="h-4 w-4 accent-zinc-900 dark:accent-zinc-100"
+                className="h-4 w-4 accent-[var(--birthday-primary)]"
               />
               <span>ยกเลิกรับอีเมลแล้ว (Unsubscribed)</span>
             </label>
@@ -1058,14 +1057,14 @@ export function AdminDashboard({
             <button
               type="button"
               onClick={closeFormDialog}
-              className="min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              className="min-h-11 rounded-lg border border-[var(--birthday-border)] px-4 py-2 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSubmittingForm}
-              className="min-h-11 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="min-h-11 rounded-lg bg-[var(--birthday-primary)] px-4 py-2 text-sm font-medium text-[var(--birthday-on-primary)] hover:bg-[var(--birthday-primary-hover)] disabled:opacity-60"
             >
               {isSubmittingForm
                 ? "กำลังบันทึก..."
@@ -1085,14 +1084,14 @@ export function AdminDashboard({
           e.preventDefault();
           closeDeleteDialog();
         }}
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-zinc-200 bg-white p-6 text-zinc-900 shadow-xl backdrop:bg-black/60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
+        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-6 text-[var(--birthday-text)] shadow-lg backdrop:bg-black/40"
       >
-        <h2 id="delete-dialog-title" className="text-lg font-semibold">
+        <h2 id="delete-dialog-title" className="text-lg font-semibold text-[var(--birthday-text)]">
           ยืนยันการลบข้อมูลลูกค้า
         </h2>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-2 text-sm text-[var(--birthday-muted)]">
           ต้องการลบลูกค้า{" "}
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+          <span className="font-semibold text-[var(--birthday-text)]">
             {deletingCustomer?.full_name}
           </span>{" "}
           ({deletingCustomer?.email}) ออกจากระบบใช่หรือไม่?
@@ -1103,7 +1102,7 @@ export function AdminDashboard({
           <div
             role="status"
             aria-live="polite"
-            className="mt-3 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+            className="mt-3 flex items-center gap-2 rounded-lg bg-[var(--birthday-soft)] px-3 py-2 text-sm text-[var(--birthday-error)]"
           >
             <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
             <span>{deleteError}</span>
@@ -1116,7 +1115,7 @@ export function AdminDashboard({
             autoFocus
             onClick={closeDeleteDialog}
             disabled={isDeleting}
-            className="min-h-11 rounded-lg border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            className="min-h-11 rounded-lg border border-[var(--birthday-border)] px-4 py-2 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
           >
             ยกเลิก
           </button>
@@ -1124,7 +1123,7 @@ export function AdminDashboard({
             type="button"
             onClick={handleConfirmDelete}
             disabled={isDeleting}
-            className="min-h-11 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+            className="min-h-11 rounded-lg bg-[var(--birthday-error)] px-4 py-2 text-sm font-medium text-[var(--birthday-on-primary)] hover:opacity-90 disabled:opacity-60"
           >
             {isDeleting ? "กำลังลบ..." : "ยืนยันลบข้อมูล"}
           </button>

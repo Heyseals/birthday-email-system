@@ -1,7 +1,8 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ArrowUpRight, Cake } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { AdminDashboard } from "./admin-dashboard";
 import type { Customer, EmailLog } from "@/types/database";
@@ -54,30 +55,48 @@ async function AdminDashboardContent() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-6">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-            หน้าจัดการแอดมิน (Admin Dashboard)
-          </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            เข้าสู่ระบบในชื่อ: <span className="font-medium">{adminEmail}</span>
+          <div className="flex items-center gap-2.5">
+            <Cake
+              size={20}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="shrink-0 text-[var(--birthday-primary)]"
+            />
+            <h1 className="text-2xl font-semibold text-[var(--birthday-text)]">
+              หน้าจัดการแอดมิน
+            </h1>
+          </div>
+          <p className="mt-1 text-sm text-[var(--birthday-muted)]">
+            เข้าสู่ระบบในชื่อ: <span className="font-medium text-[var(--birthday-text)]">{adminEmail}</span>
           </p>
         </div>
 
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="min-h-11 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Link
+            href="/join"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-[var(--birthday-primary)] px-4 py-2 text-sm font-medium text-[var(--birthday-on-primary)] transition-colors hover:bg-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
           >
-            ออกจากระบบ
-          </button>
-        </form>
+            <span>ไปหน้าลงทะเบียน (/join)</span>
+            <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
+          </Link>
+
+          <form action="/auth/signout" method="post">
+            <button
+              type="submit"
+              className="min-h-[44px] rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-4 py-2 text-sm font-medium text-[var(--birthday-text)] transition-colors hover:bg-[var(--birthday-bg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+            >
+              ออกจากระบบ
+            </button>
+          </form>
+        </div>
       </header>
 
       {(customersError || logsError) && (
         <div
           role="status"
-          className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200"
+          className="flex items-center gap-2 rounded-xl bg-[var(--birthday-soft)] px-4 py-3 text-sm text-[var(--birthday-error)]"
         >
           <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
           <span>เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Supabase กรุณารีเฟรชหน้าใหม่อีกครั้ง</span>
@@ -97,16 +116,26 @@ async function AdminDashboardContent() {
 
 export default function AdminPage() {
   return (
-    <main className="flex-1 bg-zinc-50 px-4 py-8 dark:bg-zinc-950 sm:px-6">
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-6xl rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-            กำลังโหลดข้อมูลลูกค้าและประวัติการส่ง...
-          </div>
-        }
-      >
-        <AdminDashboardContent />
-      </Suspense>
-    </main>
+    <div className="flex min-h-screen flex-col bg-[var(--birthday-bg)] text-[var(--birthday-text)] font-[family-name:var(--font-ibm-plex-thai)]">
+      <div
+        aria-hidden="true"
+        className="h-1.5 w-full"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(90deg, var(--birthday-primary) 0 24px, var(--birthday-accent) 24px 48px, var(--birthday-soft) 48px 72px, var(--birthday-success) 72px 96px)",
+        }}
+      />
+      <main className="flex-1 px-4 py-8 sm:px-6">
+        <Suspense
+          fallback={
+            <div className="mx-auto max-w-6xl rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-6 text-sm text-[var(--birthday-muted)]">
+              กำลังโหลดข้อมูลลูกค้าและประวัติการส่ง...
+            </div>
+          }
+        >
+          <AdminDashboardContent />
+        </Suspense>
+      </main>
+    </div>
   );
 }
