@@ -1,0 +1,927 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Stage, Layer, Rect, Circle, Star, Text, Image as KonvaImage, Transformer, Line } from "react-konva";
+import type Konva from "konva";
+import {
+  ArrowDown,
+  ArrowUp,
+  Copy,
+  ImagePlus,
+  Redo2,
+  Shapes,
+  Sparkles,
+  Trash2,
+  Type,
+  Undo2,
+} from "lucide-react";
+import {
+  CARD_TEMPLATES,
+  THAI_FONTS,
+  type CardDesign,
+  type CardElement,
+  type CardRatio,
+  type TextElement,
+} from "@/types/card-editor";
+
+const STORAGE_KEY = "birthday-card-draft-v1";
+const MAX_ELEMENTS = 50;
+const CANVAS_WIDTH = 800;
+
+function getCanvasHeight(ratio: CardRatio): number {
+  return ratio === "4:5" ? 1000 : 800;
+}
+
+function URLImage({
+  element,
+  isSelected,
+  onSelect,
+  onChange,
+  onDragMoveSnap,
+  onDragEndSnap,
+}: {
+  element: Extract<CardElement, { type: "image" }>;
+  isSelected: boolean;
+  onSelect: () => void;
+  onChange: (attrs: Partial<CardElement>) => void;
+  onDragMoveSnap: (node: Konva.Node) => void;
+  onDragEndSnap: () => void;
+}) {
+  const [img, setImg] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    const image = new window.Image();
+    image.crossOrigin = "anonymous";
+    image.src = element.src;
+    image.onload = () => setImg(image);
+  }, [element.src]);
+
+  if (!img) return null;
+
+  return (
+    <KonvaImage
+      id={element.id}
+      image={img}
+      x={element.x}
+      y={element.y}
+      width={element.width}
+      height={element.height}
+      rotation={element.rotation}
+      scaleX={element.scaleX}
+      scaleY={element.scaleY}
+      draggable
+      onClick={onSelect}
+      onTap={onSelect}
+      onDragMove={(e) => onDragMoveSnap(e.target)}
+      onDragEnd={(e) => {
+        onDragEndSnap();
+        onChange({ x: e.target.x(), y: e.target.y() });
+      }}
+      onTransformEnd={(e) => {
+        const node = e.target;
+        onChange({
+          x: node.x(),
+          y: node.y(),
+          rotation: node.rotation(),
+          scaleX: node.scaleX(),
+          scaleY: node.scaleY(),
+        });
+      }}
+      stroke={isSelected ? "#C8421F" : undefined}
+      strokeWidth={isSelected ? 2 : 0}
+    />
+  );
+}
+
+export function CardEditorClient() {
+  const [design, setDesign] = useState<CardDesign>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved) as CardDesign;
+      } catch {
+        // ignore invalid draft
+      }
+    }
+    return CARD_TEMPLATES[1].design;
+  });
+
+  const [history, setHistory] = useState<CardDesign[]>([]);
+  const [future, setFuture] = useState<CardDesign[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({});
+  const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [stageScale, setStageScale] = useState(0.5);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
+  const trRef = useRef<Konva.Transformer>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const canvasHeight = getCanvasHeight(design.ratio);
+
+  // โหลด Google Fonts สำหรับแคนวาส
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href =
+      "https://fonts.googleapis.com/css2?family=Itim&family=Kanit:wght@400;600&family=Mali:wght@400;600&family=Prompt:wght@400;600&family=Sarabun:wght@400;600&display=swap";
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
+
+  // Autosave
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(design));
+    } catch {
+      // ignore storage quota errors
+    }
+  }, [design]);
+
+  // Responsive canvas scaling
+  useEffect(() => {
+    const updateScale = () => {
+      if (!containerRef.current) return;
+      const availableWidth = containerRef.current.clientWidth - 24;
+      const scale = Math.min(availableWidth / CANVAS_WIDTH, 0.65);
+      setStageScale(Math.max(0.28, scale));
+    };
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
+
+  // Attach Transformer
+  useEffect(() => {
+    if (!trRef.current || !stageRef.current) return;
+    if (!selectedId) {
+      trRef.current.nodes([]);
+      return;
+    }
+    const node = stageRef.current.findOne(`#${selectedId}`);
+    if (node) {
+      trRef.current.nodes([node]);
+      trRef.current.getLayer()?.batchDraw();
+    } else {
+      trRef.current.nodes([]);
+    }
+  }, [selectedId, design.elements]);
+
+  const commitDesign = useCallback(
+    (next: CardDesign) => {
+      setHistory((prev) => [...prev.slice(-29), design]);
+      setFuture([]);
+      setDesign(next);
+    },
+    [design]
+  );
+
+  const handleUndo = useCallback(() => {
+    if (history.length === 0) return;
+    const prev = history[history.length - 1];
+    setHistory((h) => h.slice(0, -1));
+    setFuture((f) => [design, ...f]);
+    setDesign(prev);
+    setSelectedId(null);
+  }, [design, history]);
+
+  const handleRedo = useCallback(() => {
+    if (future.length === 0) return;
+    const next = future[0];
+    setFuture((f) => f.slice(1));
+    setHistory((h) => [...h, design]);
+    setDesign(next);
+    setSelectedId(null);
+  }, [design, future]);
+
+  const updateElement = useCallback(
+    (id: string, attrs: Partial<CardElement>) => {
+      commitDesign({
+        ...design,
+        elements: design.elements.map((el) =>
+          el.id === id ? ({ ...el, ...attrs } as CardElement) : el
+        ),
+      });
+    },
+    [commitDesign, design]
+  );
+
+  const deleteSelected = useCallback(() => {
+    if (!selectedId) return;
+    commitDesign({
+      ...design,
+      elements: design.elements.filter((el) => el.id !== selectedId),
+    });
+    setSelectedId(null);
+  }, [commitDesign, design, selectedId]);
+
+  const duplicateSelected = useCallback(() => {
+    if (!selectedId || design.elements.length >= MAX_ELEMENTS) return;
+    const target = design.elements.find((el) => el.id === selectedId);
+    if (!target) return;
+    const copy = {
+      ...target,
+      id: `el-${Date.now()}`,
+      x: target.x + 24,
+      y: target.y + 24,
+    };
+    commitDesign({
+      ...design,
+      elements: [...design.elements, copy],
+    });
+    setSelectedId(copy.id);
+  }, [commitDesign, design, selectedId]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        if (e.shiftKey) handleRedo();
+        else handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        duplicateSelected();
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedId) {
+          e.preventDefault();
+          deleteSelected();
+        }
+      } else if (
+        selectedId &&
+        ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)
+      ) {
+        e.preventDefault();
+        const el = design.elements.find((item) => item.id === selectedId);
+        if (!el) return;
+        const step = e.shiftKey ? 10 : 2;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        updateElement(selectedId, { x: el.x + dx, y: el.y + dy });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    deleteSelected,
+    design.elements,
+    duplicateSelected,
+    handleRedo,
+    handleUndo,
+    selectedId,
+    updateElement,
+  ]);
+
+  const addElement = (el: CardElement) => {
+    if (design.elements.length >= MAX_ELEMENTS) {
+      setStatusMsg(`เพิ่มองค์ประกอบได้สูงสุด ${MAX_ELEMENTS} ชิ้นต่อการ์ด`);
+      return;
+    }
+    setStatusMsg(null);
+    commitDesign({ ...design, elements: [...design.elements, el] });
+    setSelectedId(el.id);
+  };
+
+  const handleAddText = () => {
+    addElement({
+      id: `txt-${Date.now()}`,
+      type: "text",
+      text: "พิมพ์ข้อความอวยพร",
+      x: 150,
+      y: canvasHeight / 2 - 40,
+      width: 500,
+      fontSize: 40,
+      fontFamily: "Prompt, sans-serif",
+      fill: "#3B2A26",
+      fontStyle: "normal",
+      align: "center",
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+    });
+  };
+
+  const handleAddShape = (shape: "rect" | "circle" | "star") => {
+    addElement({
+      id: `shp-${Date.now()}`,
+      type: "shape",
+      shape,
+      x: CANVAS_WIDTH / 2 - 60,
+      y: canvasHeight / 2 - 60,
+      width: 120,
+      height: 120,
+      fill: "#F2B632",
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+    });
+  };
+
+  const handleUploadImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setStatusMsg("รองรับเฉพาะไฟล์ JPG, PNG และ WebP เท่านั้น");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setStatusMsg("ขนาดไฟล์ต้องไม่เกิน 5 MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      addElement({
+        id: `img-${Date.now()}`,
+        type: "image",
+        src: reader.result,
+        x: 200,
+        y: 200,
+        width: 320,
+        height: 240,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const moveLayer = (direction: "up" | "down") => {
+    if (!selectedId) return;
+    const idx = design.elements.findIndex((el) => el.id === selectedId);
+    if (idx === -1) return;
+    const targetIdx = direction === "up" ? idx + 1 : idx - 1;
+    if (targetIdx < 0 || targetIdx >= design.elements.length) return;
+    const next = [...design.elements];
+    const [item] = next.splice(idx, 1);
+    next.splice(targetIdx, 0, item);
+    commitDesign({ ...design, elements: next });
+  };
+
+  const handleDragMoveSnap = (node: Konva.Node) => {
+    const centerX = CANVAS_WIDTH / 2;
+    const centerY = canvasHeight / 2;
+    const box = node.getClientRect({ relativeTo: node.getParent() ?? undefined });
+    const nodeCenterX = box.x + box.width / 2;
+    const nodeCenterY = box.y + box.height / 2;
+
+    const nextSnap: { x?: number; y?: number } = {};
+    if (Math.abs(nodeCenterX - centerX) < 12) {
+      node.x(node.x() + (centerX - nodeCenterX));
+      nextSnap.x = centerX;
+    }
+    if (Math.abs(nodeCenterY - centerY) < 12) {
+      node.y(node.y() + (centerY - nodeCenterY));
+      nextSnap.y = centerY;
+    }
+    setSnapLines(nextSnap);
+  };
+
+  const selectedElement = design.elements.find((el) => el.id === selectedId) ?? null;
+
+  return (
+    <div className="space-y-4">
+      {/* Top Action Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={history.length === 0}
+            aria-label="เลิกทำ"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)] disabled:opacity-40"
+          >
+            <Undo2 size={18} strokeWidth={1.5} />
+            <span className="hidden sm:inline">เลิกทำ</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleRedo}
+            disabled={future.length === 0}
+            aria-label="ทำซ้ำ"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)] disabled:opacity-40"
+          >
+            <Redo2 size={18} strokeWidth={1.5} />
+            <span className="hidden sm:inline">ทำซ้ำ</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <label htmlFor="card-ratio" className="text-sm text-[var(--birthday-muted)]">
+            สัดส่วน:
+          </label>
+          <select
+            id="card-ratio"
+            value={design.ratio}
+            onChange={(e) =>
+              commitDesign({ ...design, ratio: e.target.value as CardRatio })
+            }
+            className="min-h-[44px] rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
+          >
+            <option value="4:5">แนวตั้ง (4:5)</option>
+            <option value="1:1">จัตุรัส (1:1)</option>
+          </select>
+        </div>
+      </div>
+
+      {statusMsg && (
+        <div
+          role="status"
+          className="rounded-lg bg-[var(--birthday-soft)] px-4 py-2.5 text-sm text-[var(--birthday-error)]"
+        >
+          {statusMsg}
+        </div>
+      )}
+
+      {/* Main Editor Grid */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        {/* Left Toolbar (Desktop) / Bottom Toolbar (Mobile) */}
+        <aside className="order-2 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4 lg:order-1 lg:col-span-3">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--birthday-text)]">
+            เพิ่มองค์ประกอบ
+          </h2>
+          <div className="flex gap-2 overflow-x-auto pb-2 lg:grid lg:grid-cols-2 lg:overflow-visible lg:pb-0">
+            <button
+              type="button"
+              onClick={handleAddText}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+            >
+              <Type size={18} strokeWidth={1.5} />
+              <span>ข้อความ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+            >
+              <ImagePlus size={18} strokeWidth={1.5} />
+              <span>รูปภาพ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddShape("rect")}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+            >
+              <Shapes size={18} strokeWidth={1.5} />
+              <span>สี่เหลี่ยม</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddShape("circle")}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+            >
+              <Sparkles size={18} strokeWidth={1.5} />
+              <span>วงกลม</span>
+            </button>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleUploadImage}
+            className="hidden"
+          />
+
+          <div className="mt-5">
+            <h3 className="mb-2 text-sm font-semibold text-[var(--birthday-text)]">
+              เทมเพลตเริ่มต้น
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {CARD_TEMPLATES.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => {
+                    commitDesign(tpl.design);
+                    setSelectedId(null);
+                  }}
+                  className="min-h-[44px] rounded-lg border border-[var(--birthday-border)] px-2.5 py-2 text-left text-xs font-medium text-[var(--birthday-text)] hover:border-[var(--birthday-primary)] hover:bg-[var(--birthday-bg)]"
+                >
+                  {tpl.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <h3 className="mb-2 text-sm font-semibold text-[var(--birthday-text)]">
+              สีพื้นหลังการ์ด
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {["#FFF8EE", "#FFFFFF", "#FBE3DC", "#F2B632", "#1F7A6D", "#C8421F"].map(
+                (color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    aria-label={`เลือกสีพื้นหลัง ${color}`}
+                    onClick={() =>
+                      commitDesign({
+                        ...design,
+                        background: { type: "solid", color },
+                      })
+                    }
+                    className="h-9 w-9 rounded-full border border-[var(--birthday-border)]"
+                    style={{ backgroundColor: color }}
+                  />
+                )
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Center Canvas */}
+        <div
+          ref={containerRef}
+          className="order-1 flex items-center justify-center rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-bg)]/60 p-3 lg:order-2 lg:col-span-6"
+        >
+          <div
+            className="overflow-hidden rounded-lg border border-[var(--birthday-border)] shadow-sm"
+            style={{
+              width: CANVAS_WIDTH * stageScale,
+              height: canvasHeight * stageScale,
+            }}
+          >
+            <Stage
+              ref={stageRef}
+              width={CANVAS_WIDTH * stageScale}
+              height={canvasHeight * stageScale}
+              scaleX={stageScale}
+              scaleY={stageScale}
+              onMouseDown={(e) => {
+                if (e.target === e.target.getStage()) setSelectedId(null);
+              }}
+              onTouchStart={(e) => {
+                if (e.target === e.target.getStage()) setSelectedId(null);
+              }}
+            >
+              <Layer>
+                {/* Background */}
+                {design.background.type === "solid" ? (
+                  <Rect
+                    x={0}
+                    y={0}
+                    width={CANVAS_WIDTH}
+                    height={canvasHeight}
+                    fill={design.background.color}
+                    listening={false}
+                  />
+                ) : (
+                  <Rect
+                    x={0}
+                    y={0}
+                    width={CANVAS_WIDTH}
+                    height={canvasHeight}
+                    fillLinearGradientStartPoint={{ x: 0, y: 0 }}
+                    fillLinearGradientEndPoint={{ x: 0, y: canvasHeight }}
+                    fillLinearGradientColorStops={[
+                      0,
+                      design.background.from,
+                      1,
+                      design.background.to,
+                    ]}
+                    listening={false}
+                  />
+                )}
+
+                {/* Elements */}
+                {design.elements.map((el) => {
+                  if (el.type === "text") {
+                    return (
+                      <Text
+                        key={el.id}
+                        id={el.id}
+                        text={el.text}
+                        x={el.x}
+                        y={el.y}
+                        width={el.width}
+                        fontSize={el.fontSize}
+                        fontFamily={el.fontFamily}
+                        fill={el.fill}
+                        fontStyle={el.fontStyle}
+                        align={el.align}
+                        rotation={el.rotation}
+                        scaleX={el.scaleX}
+                        scaleY={el.scaleY}
+                        draggable
+                        onClick={() => setSelectedId(el.id)}
+                        onTap={() => setSelectedId(el.id)}
+                        onDragMove={(e) => handleDragMoveSnap(e.target)}
+                        onDragEnd={(e) => {
+                          setSnapLines({});
+                          updateElement(el.id, {
+                            x: e.target.x(),
+                            y: e.target.y(),
+                          });
+                        }}
+                        onTransformEnd={(e) => {
+                          const node = e.target;
+                          updateElement(el.id, {
+                            x: node.x(),
+                            y: node.y(),
+                            rotation: node.rotation(),
+                            scaleX: node.scaleX(),
+                            scaleY: node.scaleY(),
+                          });
+                        }}
+                      />
+                    );
+                  }
+                  if (el.type === "shape") {
+                    if (el.shape === "circle") {
+                      return (
+                        <Circle
+                          key={el.id}
+                          id={el.id}
+                          x={el.x}
+                          y={el.y}
+                          radius={el.width / 2}
+                          fill={el.fill}
+                          rotation={el.rotation}
+                          scaleX={el.scaleX}
+                          scaleY={el.scaleY}
+                          draggable
+                          onClick={() => setSelectedId(el.id)}
+                          onTap={() => setSelectedId(el.id)}
+                          onDragMove={(e) => handleDragMoveSnap(e.target)}
+                          onDragEnd={(e) => {
+                            setSnapLines({});
+                            updateElement(el.id, {
+                              x: e.target.x(),
+                              y: e.target.y(),
+                            });
+                          }}
+                        />
+                      );
+                    }
+                    if (el.shape === "star") {
+                      return (
+                        <Star
+                          key={el.id}
+                          id={el.id}
+                          x={el.x}
+                          y={el.y}
+                          numPoints={5}
+                          innerRadius={25}
+                          outerRadius={55}
+                          fill={el.fill}
+                          draggable
+                          onClick={() => setSelectedId(el.id)}
+                          onTap={() => setSelectedId(el.id)}
+                        />
+                      );
+                    }
+                    return (
+                      <Rect
+                        key={el.id}
+                        id={el.id}
+                        x={el.x}
+                        y={el.y}
+                        width={el.width}
+                        height={el.height}
+                        fill={el.fill}
+                        rotation={el.rotation}
+                        scaleX={el.scaleX}
+                        scaleY={el.scaleY}
+                        draggable
+                        onClick={() => setSelectedId(el.id)}
+                        onTap={() => setSelectedId(el.id)}
+                        onDragMove={(e) => handleDragMoveSnap(e.target)}
+                        onDragEnd={(e) => {
+                          setSnapLines({});
+                          updateElement(el.id, {
+                            x: e.target.x(),
+                            y: e.target.y(),
+                          });
+                        }}
+                      />
+                    );
+                  }
+                  if (el.type === "image") {
+                    return (
+                      <URLImage
+                        key={el.id}
+                        element={el}
+                        isSelected={selectedId === el.id}
+                        onSelect={() => setSelectedId(el.id)}
+                        onChange={(attrs) => updateElement(el.id, attrs)}
+                        onDragMoveSnap={handleDragMoveSnap}
+                        onDragEndSnap={() => setSnapLines({})}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Snap Guides */}
+                {snapLines.x !== undefined && (
+                  <Line
+                    points={[snapLines.x, 0, snapLines.x, canvasHeight]}
+                    stroke="#C8421F"
+                    strokeWidth={1.5}
+                    dash={[6, 4]}
+                  />
+                )}
+                {snapLines.y !== undefined && (
+                  <Line
+                    points={[0, snapLines.y, CANVAS_WIDTH, snapLines.y]}
+                    stroke="#C8421F"
+                    strokeWidth={1.5}
+                    dash={[6, 4]}
+                  />
+                )}
+
+                <Transformer ref={trRef} rotateEnabled enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]} />
+              </Layer>
+            </Stage>
+          </div>
+        </div>
+
+        {/* Right Properties Panel */}
+        <aside className="order-3 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4 lg:col-span-3">
+          <h2 className="mb-3 text-sm font-semibold text-[var(--birthday-text)]">
+            คุณสมบัติองค์ประกอบ
+          </h2>
+
+          {!selectedElement ? (
+            <p className="text-sm text-[var(--birthday-muted)]">
+              แตะหรือคลิกที่องค์ประกอบบนการ์ดเพื่อแก้ไข
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={duplicateSelected}
+                  aria-label="ทำซ้ำ"
+                  className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-[var(--birthday-border)] px-3 text-xs font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+                >
+                  <Copy size={16} strokeWidth={1.5} />
+                  <span>ทำซ้ำ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveLayer("up")}
+                  aria-label="เลื่อนขึ้น"
+                  className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-[var(--birthday-border)] px-3 text-xs font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+                >
+                  <ArrowUp size={16} strokeWidth={1.5} />
+                  <span>ขึ้น</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveLayer("down")}
+                  aria-label="เลื่อนลง"
+                  className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-[var(--birthday-border)] px-3 text-xs font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+                >
+                  <ArrowDown size={16} strokeWidth={1.5} />
+                  <span>ลง</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteSelected}
+                  aria-label="ลบองค์ประกอบ"
+                  className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-[var(--birthday-error)]/40 px-3 text-xs font-medium text-[var(--birthday-error)] hover:bg-[var(--birthday-soft)]"
+                >
+                  <Trash2 size={16} strokeWidth={1.5} />
+                  <span>ลบ</span>
+                </button>
+              </div>
+
+              {selectedElement.type === "text" && (
+                <div className="space-y-3 border-t border-[var(--birthday-border)] pt-3">
+                  <div>
+                    <label
+                      htmlFor="prop-text"
+                      className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                    >
+                      ข้อความ
+                    </label>
+                    <textarea
+                      id="prop-text"
+                      rows={3}
+                      value={selectedElement.text}
+                      onChange={(e) =>
+                        updateElement(selectedElement.id, { text: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-[var(--birthday-border)] px-3 py-2 text-sm text-[var(--birthday-text)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="prop-font"
+                      className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                    >
+                      ฟอนต์ภาษาไทย
+                    </label>
+                    <select
+                      id="prop-font"
+                      value={selectedElement.fontFamily}
+                      onChange={(e) =>
+                        updateElement(selectedElement.id, {
+                          fontFamily: e.target.value,
+                        })
+                      }
+                      className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
+                    >
+                      {THAI_FONTS.map((f) => (
+                        <option key={f.label} value={f.value}>
+                          {f.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        htmlFor="prop-size"
+                        className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                      >
+                        ขนาดตัวอักษร
+                      </label>
+                      <input
+                        id="prop-size"
+                        type="number"
+                        min={14}
+                        max={120}
+                        value={selectedElement.fontSize}
+                        onChange={(e) =>
+                          updateElement(selectedElement.id, {
+                            fontSize: Number(e.target.value) || 24,
+                          })
+                        }
+                        className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] px-3 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="prop-color"
+                        className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                      >
+                        สีตัวอักษร
+                      </label>
+                      <input
+                        id="prop-color"
+                        type="color"
+                        value={selectedElement.fill}
+                        onChange={(e) =>
+                          updateElement(selectedElement.id, {
+                            fill: e.target.value,
+                          })
+                        }
+                        className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] p-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateElement(selectedElement.id, {
+                          fontStyle:
+                            selectedElement.fontStyle === "bold"
+                              ? "normal"
+                              : "bold",
+                        } as Partial<TextElement>)
+                      }
+                      className="min-h-[44px] flex-1 rounded-lg border border-[var(--birthday-border)] text-xs font-semibold"
+                    >
+                      ตัวหนา
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateElement(selectedElement.id, {
+                          align:
+                            selectedElement.align === "center"
+                              ? "left"
+                              : selectedElement.align === "left"
+                                ? "right"
+                                : "center",
+                        })
+                      }
+                      className="min-h-[44px] flex-1 rounded-lg border border-[var(--birthday-border)] text-xs font-medium"
+                    >
+                      จัดแนว: {selectedElement.align}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
