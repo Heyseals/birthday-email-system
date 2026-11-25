@@ -24,3 +24,133 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Native Modal Dialog scroll containment (prevent background scroll chaining) */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Accessible Tabs active indicator using shape (border underline), not color alone */
+.admin-tab {
+  position: relative;
+}
+
+.admin-tab[aria-selected="true"] {
+  color: var(--foreground);
+}
+
+.admin-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px;
+  border-block-end: 3px solid currentColor;
+}
+
+/* Responsive table with container query & sticky headers */
+.admin-table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  max-block-size: min(560px, 72vh);
+  container-type: inline-size;
+}
+
+.admin-responsive-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-responsive-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+}
+
+@container (width < 640px) {
+  .admin-responsive-table,
+  .admin-responsive-table thead,
+  .admin-responsive-table tbody,
+  .admin-responsive-table tr,
+  .admin-responsive-table th,
+  .admin-responsive-table td {
+    display: block;
+  }
+
+  .admin-responsive-table thead {
+    display: none;
+  }
+
+  .admin-responsive-table tr {
+    margin-block-end: 0.75rem;
+    border-bottom: 1px solid #d4d4d8;
+    padding-block: 0.5rem;
+  }
+
+  .admin-responsive-table tbody th {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
+    background: #f4f4f5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .admin-responsive-table tr {
+      border-bottom-color: #27272a;
+    }
+
+    .admin-responsive-table tbody th {
+      background: #18181b;
+    }
+  }
+
+  .admin-responsive-table td {
+    text-align: left;
+    padding-block: 0.35rem;
+  }
+
+  .customers-table td:nth-child(2)::before {
+    content: "อีเมล: ";
+    font-weight: 600;
+  }
+  .customers-table td:nth-child(3)::before {
+    content: "วันเกิด: ";
+    font-weight: 600;
+  }
+  .customers-table td:nth-child(4)::before {
+    content: "ความยินยอม: ";
+    font-weight: 600;
+  }
+  .customers-table td:nth-child(5)::before {
+    content: "การรับอีเมล: ";
+    font-weight: 600;
+  }
+
+  .logs-table td:nth-child(2)::before {
+    content: "ลูกค้า: ";
+    font-weight: 600;
+  }
+  .logs-table td:nth-child(3)::before {
+    content: "อีเมลปลายทาง: ";
+    font-weight: 600;
+  }
+  .logs-table td:nth-child(4)::before {
+    content: "ปีที่ส่ง: ";
+    font-weight: 600;
+  }
+  .logs-table td:nth-child(5)::before {
+    content: "ประเภท: ";
+    font-weight: 600;
+  }
+  .logs-table td:nth-child(6)::before {
+    content: "ผลลัพธ์: ";
+    font-weight: 600;
+  }
+  .logs-table td:nth-child(7)::before {
+    content: "รายละเอียด: ";
+    font-weight: 600;
+  }
+}

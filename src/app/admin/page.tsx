@@ -2,6 +2,26 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { AdminDashboard } from "./admin-dashboard";
+import type { Customer, EmailLog } from "@/types/database";
+
+function getBangkokTodayParts() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(new Date());
+
+  const year = Number(parts.find((p) => p.type === "year")?.value ?? 2026);
+  const month = Number(parts.find((p) => p.type === "month")?.value ?? 1);
+  const day = Number(parts.find((p) => p.type === "day")?.value ?? 1);
+
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const isNonLeapFeb28 = !isLeap && month === 2 && day === 28;
+
+  return { month, day, isNonLeapFeb28 };
+}
 
 async function AdminDashboardContent() {
   await connection();
@@ -16,8 +36,23 @@ async function AdminDashboardContent() {
   const adminEmail =
     typeof claims.email === "string" ? claims.email : "แอดมิน";
 
+  const [{ data: customersData, error: customersError }, { data: logsData, error: logsError }] =
+    await Promise.all([
+      supabase
+        .from("customers")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("email_log")
+        .select("*, customers(full_name)")
+        .order("sent_at", { ascending: false })
+        .limit(200),
+    ]);
+
+  const today = getBangkokTodayParts();
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div>
           <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
@@ -38,26 +73,33 @@ async function AdminDashboardContent() {
         </form>
       </header>
 
-      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
-        <h2 className="text-base font-semibold">
-          ระบบยืนยันตัวตนแอดมินพร้อมใช้งาน (ขั้นที่ 4)
-        </h2>
-        <p className="mt-1 text-sm opacity-90">
-          หน้านี้ถูกป้องกันด้วย Next.js Proxy และตรวจสอบสิทธิ์ฝั่ง Server แล้ว
-          (ตารางลูกค้าและประวัติส่งอีเมลจะเพิ่มในขั้นที่ 5)
-        </p>
-      </section>
+      {(customersError || logsError) && (
+        <div
+          role="status"
+          className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200"
+        >
+          ⚠️ เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Supabase กรุณารีเฟรชหน้าใหม่อีกครั้ง
+        </div>
+      )}
+
+      <AdminDashboard
+        customers={(customersData as Customer[]) ?? []}
+        emailLogs={(logsData as unknown as EmailLog[]) ?? []}
+        todayMonth={today.month}
+        todayDay={today.day}
+        isNonLeapFeb28={today.isNonLeapFeb28}
+      />
     </div>
   );
 }
 
 export default function AdminPage() {
   return (
-    <main className="flex-1 bg-zinc-50 px-4 py-10 dark:bg-zinc-950">
+    <main className="flex-1 bg-zinc-50 px-4 py-8 dark:bg-zinc-950 sm:px-6">
       <Suspense
         fallback={
-          <div className="mx-auto max-w-4xl rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-            กำลังตรวจสอบสิทธิ์แอดมิน...
+          <div className="mx-auto max-w-6xl rounded-2xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+            กำลังโหลดข้อมูลลูกค้าและประวัติการส่ง...
           </div>
         }
       >
