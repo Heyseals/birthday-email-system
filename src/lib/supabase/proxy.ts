@@ -6,9 +6,23 @@ export async function updateSession(request: NextRequest) {
     request,
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const { pathname } = request.nextUrl;
+
+  if (!supabaseUrl || !supabaseKey) {
+    if (pathname.startsWith("/admin")) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = "/login";
+      loginUrl.search = "";
+      return NextResponse.redirect(loginUrl);
+    }
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
@@ -37,8 +51,6 @@ export async function updateSession(request: NextRequest) {
   const claims = data?.claims;
   const isAuthenticated =
     Boolean(claims?.sub) && claims?.is_anonymous !== true;
-
-  const { pathname } = request.nextUrl;
 
   if (!isAuthenticated && pathname.startsWith("/admin")) {
     const loginUrl = request.nextUrl.clone();
