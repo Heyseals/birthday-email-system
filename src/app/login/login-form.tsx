@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { loginAction, type LoginActionState } from "./actions";
 
 const initialState: LoginActionState = { error: null };
@@ -59,12 +60,10 @@ export function LoginForm() {
         <div
           role="status"
           aria-live="polite"
-          className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+          className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
         >
-          <span role="img" aria-label="ข้อผิดพลาด">
-            ⚠️
-          </span>{" "}
-          {state.error}
+          <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+          <span>{state.error}</span>
         </div>
       )}
 
@@ -107,12 +106,10 @@ export function LoginForm() {
         {emailInvalid && (
           <p
             id="email-error"
-            className="text-sm text-red-700 dark:text-red-400"
+            className="flex items-center gap-1.5 text-sm text-red-700 dark:text-red-400"
           >
-            <span role="img" aria-label="ข้อผิดพลาด">
-              ❌
-            </span>{" "}
-            กรุณากรอกอีเมลให้ถูกต้อง เช่น admin@example.com
+            <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+            <span>กรุณากรอกอีเมลให้ถูกต้อง เช่น admin@example.com</span>
           </p>
         )}
       </div>
@@ -160,12 +157,10 @@ export function LoginForm() {
         {passwordInvalid && (
           <p
             id="password-error"
-            className="text-sm text-red-700 dark:text-red-400"
+            className="flex items-center gap-1.5 text-sm text-red-700 dark:text-red-400"
           >
-            <span role="img" aria-label="ข้อผิดพลาด">
-              ❌
-            </span>{" "}
-            กรุณากรอกรหัสผ่าน
+            <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+            <span>กรุณากรอกรหัสผ่าน</span>
           </p>
         )}
       </div>

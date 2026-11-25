@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AlertCircle, CircleCheck, Loader2, Mail } from "lucide-react";
 import { THAI_MONTHS, getMaxDaysInMonth } from "@/types/database";
 
 export function JoinForm() {
@@ -117,6 +118,13 @@ export function JoinForm() {
         error?: string;
       };
 
+      if (res.status === 429) {
+        setServerError(
+          "คุณส่งคำขอถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง"
+        );
+        return;
+      }
+
       if (!res.ok || !data.ok) {
         setServerError(
           data.error ?? "ไม่สามารถลงทะเบียนได้ กรุณาลองใหม่อีกครั้ง"
@@ -126,7 +134,7 @@ export function JoinForm() {
 
       setSuccessMessage(
         data.message ??
-          "ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมาย"
+          "ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมายและโฟลเดอร์สแปม"
       );
       setFullName("");
       setEmail("");
@@ -145,22 +153,31 @@ export function JoinForm() {
       <div
         role="status"
         aria-live="polite"
-        className="rounded-xl border border-emerald-700 bg-emerald-950/40 p-6 text-center"
+        className="rounded-lg bg-[var(--birthday-soft)] p-6"
       >
-        <div className="mb-3 text-4xl" aria-hidden="true">
-          📩
+        <div className="flex items-start gap-3">
+          <CircleCheck
+            size={20}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-[var(--birthday-success)]"
+          />
+          <div className="space-y-2">
+            <h2 className="text-base font-semibold text-[var(--birthday-text)]">
+              กรุณาตรวจสอบอีเมลเพื่อยืนยัน
+            </h2>
+            <p className="text-sm leading-relaxed text-[var(--birthday-text)]">
+              {successMessage}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSuccessMessage(null)}
+              className="mt-2 inline-flex min-h-[44px] items-center text-sm font-medium text-[var(--birthday-primary)] underline underline-offset-4 hover:text-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+            >
+              ลงทะเบียนอีเมลอื่น
+            </button>
+          </div>
         </div>
-        <h2 className="mb-2 text-lg font-bold text-emerald-300">
-          ตรวจสอบอีเมลเพื่อยืนยันตัวตน
-        </h2>
-        <p className="text-sm leading-relaxed text-zinc-200">{successMessage}</p>
-        <button
-          type="button"
-          onClick={() => setSuccessMessage(null)}
-          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
-        >
-          ลงทะเบียนอีเมลอื่น
-        </button>
       </div>
     );
   }
@@ -176,12 +193,15 @@ export function JoinForm() {
         <div
           role="status"
           aria-live="polite"
-          className="rounded-lg border border-red-700 bg-red-950/50 px-4 py-3 text-sm text-red-200"
+          className="flex items-start gap-2.5 rounded-lg bg-[var(--birthday-soft)] px-4 py-3 text-sm text-[var(--birthday-error)]"
         >
-          <span role="img" aria-label="ข้อผิดพลาด">
-            ⚠️
-          </span>{" "}
-          {serverError}
+          <AlertCircle
+            size={18}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="mt-0.5 shrink-0"
+          />
+          <span>{serverError}</span>
         </div>
       )}
 
@@ -206,10 +226,10 @@ export function JoinForm() {
       <div className="flex flex-col gap-1.5">
         <label
           htmlFor="full_name"
-          className="text-sm font-medium text-zinc-100"
+          className="text-sm font-medium text-[var(--birthday-text)]"
         >
           ชื่อที่อยากให้เรียก{" "}
-          <span aria-hidden="true" className="text-red-400">
+          <span aria-hidden="true" className="text-[var(--birthday-primary)]">
             *
           </span>
         </label>
@@ -237,150 +257,241 @@ export function JoinForm() {
             }
           }}
           placeholder="เช่น คุณสมชาย หรือ ชื่อเล่น"
-          className={`min-h-12 w-full rounded-lg border bg-zinc-900 px-3.5 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-500 ${
-            nameInvalid ? "border-red-500 bg-red-950/30" : "border-zinc-700"
+          className={`min-h-[44px] w-full rounded-lg border bg-[var(--birthday-surface)] px-3.5 py-2.5 text-base text-[var(--birthday-text)] placeholder:text-[var(--birthday-muted)]/70 transition-colors focus-visible:border-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--birthday-primary)] ${
+            nameInvalid
+              ? "border-[var(--birthday-error)]"
+              : "border-[var(--birthday-border)]"
           }`}
         />
         {nameInvalid && (
-          <p id="full_name-error" className="text-sm text-red-400">
-            กรุณากรอกชื่อที่อยากให้เรียก (ไม่เกิน 100 ตัวอักษร)
+          <p
+            id="full_name-error"
+            className="flex items-center gap-1.5 text-sm text-[var(--birthday-error)]"
+          >
+            <AlertCircle
+              size={18}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="shrink-0"
+            />
+            <span>กรุณากรอกชื่อที่อยากให้เรียก (ไม่เกิน 100 ตัวอักษร)</span>
           </p>
         )}
       </div>
 
       {/* อีเมล */}
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="email" className="text-sm font-medium text-zinc-100">
+        <label
+          htmlFor="email"
+          className="text-sm font-medium text-[var(--birthday-text)]"
+        >
           อีเมล{" "}
-          <span aria-hidden="true" className="text-red-400">
+          <span aria-hidden="true" className="text-[var(--birthday-primary)]">
             *
           </span>
         </label>
-        <span id="email-hint" className="text-xs text-zinc-400">
-          ใช้สำหรับส่งลิงก์ยืนยันและอีเมลอวยพรวันเกิด (เช่น name@example.com)
+        <div className="relative">
+          <Mail
+            size={18}
+            strokeWidth={1.5}
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--birthday-muted)]"
+          />
+          <input
+            ref={emailRef}
+            id="email"
+            name="email"
+            type="email"
+            required
+            maxLength={254}
+            autoComplete="email"
+            spellCheck={false}
+            autoCapitalize="none"
+            autoCorrect="off"
+            enterKeyHint="next"
+            value={email}
+            aria-invalid={emailInvalid ? "true" : "false"}
+            aria-describedby={
+              emailInvalid ? "email-hint email-error" : "email-hint"
+            }
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (emailInvalid && isEmailValid(e.target.value)) {
+                setEmailInvalid(false);
+              }
+            }}
+            onBlur={() => {
+              if (email.length > 0) {
+                setEmailInvalid(!isEmailValid(email));
+              }
+            }}
+            placeholder="you@example.com"
+            className={`min-h-[44px] w-full rounded-lg border bg-[var(--birthday-surface)] py-2.5 pr-3.5 pl-10 text-base text-[var(--birthday-text)] placeholder:text-[var(--birthday-muted)]/70 transition-colors focus-visible:border-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--birthday-primary)] ${
+              emailInvalid
+                ? "border-[var(--birthday-error)]"
+                : "border-[var(--birthday-border)]"
+            }`}
+          />
+        </div>
+        <span id="email-hint" className="text-sm text-[var(--birthday-muted)]">
+          ใช้ส่งลิงก์ยืนยันและคำอวยพรในวันเกิดของคุณ
         </span>
-        <input
-          ref={emailRef}
-          id="email"
-          name="email"
-          type="email"
-          required
-          maxLength={254}
-          autoComplete="email"
-          spellCheck={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          enterKeyHint="next"
-          value={email}
-          aria-invalid={emailInvalid ? "true" : "false"}
-          aria-describedby={
-            emailInvalid ? "email-hint email-error" : "email-hint"
-          }
-          onChange={(e) => {
-            setEmail(e.target.value);
-            if (emailInvalid && isEmailValid(e.target.value)) {
-              setEmailInvalid(false);
-            }
-          }}
-          onBlur={() => {
-            if (email.length > 0) {
-              setEmailInvalid(!isEmailValid(email));
-            }
-          }}
-          placeholder="you@example.com"
-          className={`min-h-12 w-full rounded-lg border bg-zinc-900 px-3.5 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-500 ${
-            emailInvalid ? "border-red-500 bg-red-950/30" : "border-zinc-700"
-          }`}
-        />
         {emailInvalid && (
-          <p id="email-error" className="text-sm text-red-400">
-            กรุณากรอกรูปแบบอีเมลให้ถูกต้อง
+          <p
+            id="email-error"
+            className="flex items-center gap-1.5 text-sm text-[var(--birthday-error)]"
+          >
+            <AlertCircle
+              size={18}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="shrink-0"
+            />
+            <span>กรุณากรอกรูปแบบอีเมลให้ถูกต้อง</span>
           </p>
         )}
       </div>
 
       {/* วัน/เดือนเกิด (ไม่เก็บปี) */}
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-zinc-100">
+      <fieldset className="space-y-2 border-t border-[var(--birthday-border)] pt-5">
+        <legend className="text-sm font-medium text-[var(--birthday-text)]">
           วัน / เดือนเกิด (ไม่เก็บปีเกิด){" "}
-          <span aria-hidden="true" className="text-red-400">
+          <span aria-hidden="true" className="text-[var(--birthday-primary)]">
             *
           </span>
         </legend>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="birth_month" className="text-xs text-zinc-400">
+            <label
+              htmlFor="birth_month"
+              className="text-sm text-[var(--birthday-muted)]"
+            >
               เดือนเกิด
             </label>
-            <select
-              ref={monthRef}
-              id="birth_month"
-              name="birth_month"
-              required
-              value={birthMonth}
-              aria-invalid={monthInvalid ? "true" : "false"}
-              aria-describedby={monthInvalid ? "month-error" : undefined}
-              onChange={(e) => handleMonthChange(e.target.value)}
-              className={`min-h-12 w-full rounded-lg border bg-zinc-900 px-3 py-2.5 text-base text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-500 ${
-                monthInvalid
-                  ? "border-red-500 bg-red-950/30"
-                  : "border-zinc-700"
-              }`}
-            >
-              <option value="">-- เลือกเดือน --</option>
-              {THAI_MONTHS.map((name, index) => (
-                <option key={name} value={index + 1}>
-                  {index + 1}. {name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                ref={monthRef}
+                id="birth_month"
+                name="birth_month"
+                required
+                value={birthMonth}
+                aria-invalid={monthInvalid ? "true" : "false"}
+                aria-describedby={monthInvalid ? "month-error" : undefined}
+                onChange={(e) => handleMonthChange(e.target.value)}
+                className={`min-h-[44px] w-full appearance-none rounded-lg border bg-[var(--birthday-surface)] py-2.5 pr-9 pl-3.5 text-base text-[var(--birthday-text)] transition-colors focus-visible:border-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--birthday-primary)] ${
+                  monthInvalid
+                    ? "border-[var(--birthday-error)]"
+                    : "border-[var(--birthday-border)]"
+                }`}
+              >
+                <option value="">เลือกเดือน</option>
+                {THAI_MONTHS.map((name, index) => (
+                  <option key={name} value={index + 1}>
+                    {index + 1}. {name}
+                  </option>
+                ))}
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[var(--birthday-muted)]"
+              >
+                <path
+                  d="M6 8l4 4 4-4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
             {monthInvalid && (
-              <p id="month-error" className="text-sm text-red-400">
-                กรุณาเลือกเดือนเกิด
+              <p
+                id="month-error"
+                className="flex items-center gap-1.5 text-sm text-[var(--birthday-error)]"
+              >
+                <AlertCircle
+                  size={18}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="shrink-0"
+                />
+                <span>กรุณาเลือกเดือนเกิด</span>
               </p>
             )}
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="birth_day" className="text-xs text-zinc-400">
+            <label
+              htmlFor="birth_day"
+              className="text-sm text-[var(--birthday-muted)]"
+            >
               วันที่เกิด
             </label>
-            <select
-              ref={dayRef}
-              id="birth_day"
-              name="birth_day"
-              required
-              value={birthDay}
-              aria-invalid={dayInvalid ? "true" : "false"}
-              aria-describedby={dayInvalid ? "day-error" : undefined}
-              onChange={(e) => {
-                setBirthDay(e.target.value);
-                setDayInvalid(false);
-              }}
-              className={`min-h-12 w-full rounded-lg border bg-zinc-900 px-3 py-2.5 text-base text-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-500 ${
-                dayInvalid ? "border-red-500 bg-red-950/30" : "border-zinc-700"
-              }`}
-            >
-              <option value="">-- เลือกวัน --</option>
-              {Array.from({ length: maxDays }, (_, idx) => idx + 1).map(
-                (day) => (
-                  <option key={day} value={day}>
-                    วันที่ {day}
-                  </option>
-                )
-              )}
-            </select>
+            <div className="relative">
+              <select
+                ref={dayRef}
+                id="birth_day"
+                name="birth_day"
+                required
+                value={birthDay}
+                aria-invalid={dayInvalid ? "true" : "false"}
+                aria-describedby={dayInvalid ? "day-error" : undefined}
+                onChange={(e) => {
+                  setBirthDay(e.target.value);
+                  setDayInvalid(false);
+                }}
+                className={`min-h-[44px] w-full appearance-none rounded-lg border bg-[var(--birthday-surface)] py-2.5 pr-9 pl-3.5 text-base text-[var(--birthday-text)] transition-colors focus-visible:border-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--birthday-primary)] ${
+                  dayInvalid
+                    ? "border-[var(--birthday-error)]"
+                    : "border-[var(--birthday-border)]"
+                }`}
+              >
+                <option value="">เลือกวัน</option>
+                {Array.from({ length: maxDays }, (_, idx) => idx + 1).map(
+                  (day) => (
+                    <option key={day} value={day}>
+                      วันที่ {day}
+                    </option>
+                  )
+                )}
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                fill="none"
+                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-[var(--birthday-muted)]"
+              >
+                <path
+                  d="M6 8l4 4 4-4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
             {dayInvalid && (
-              <p id="day-error" className="text-sm text-red-400">
-                กรุณาเลือกวันที่เกิด
+              <p
+                id="day-error"
+                className="flex items-center gap-1.5 text-sm text-[var(--birthday-error)]"
+              >
+                <AlertCircle
+                  size={18}
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                  className="shrink-0"
+                />
+                <span>กรุณาเลือกวันที่เกิด</span>
               </p>
             )}
           </div>
         </div>
       </fieldset>
 
-      {/* Checkbox PDPA — ไม่ติ๊กไว้ล่วงหน้า */}
-      <div className="rounded-lg border border-zinc-800 bg-zinc-900/70 p-4">
+      {/* Checkbox PDPA — ไม่ติ๊กไว้ล่วงหน้า และไม่เป็นกล่องซ้อน */}
+      <div className="border-t border-[var(--birthday-border)] pt-5">
         <div className="flex items-start gap-3">
           <input
             ref={consentRef}
@@ -399,27 +510,38 @@ export function JoinForm() {
                 setConsentInvalid(false);
               }
             }}
-            className="mt-1 h-5 w-5 shrink-0 rounded border-zinc-600 bg-zinc-950 accent-blue-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
+            className="mt-1 h-5 w-5 shrink-0 rounded border-[var(--birthday-border)] accent-[var(--birthday-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
           />
           <label
             htmlFor="consent_given"
-            className="cursor-pointer text-sm leading-relaxed text-zinc-200"
+            className="cursor-pointer text-sm leading-relaxed text-[var(--birthday-text)]"
           >
-            ยินยอมให้จัดเก็บและใช้ข้อมูลส่วนบุคคล (ชื่อ อีเมล และวัน/เดือนเกิด){" "}
-            <span aria-hidden="true" className="text-red-400">
+            ยินยอมให้จัดเก็บชื่อ อีเมล และวัน/เดือนเกิด เพื่อส่งคำอวยพรวันเกิด{" "}
+            <span aria-hidden="true" className="text-[var(--birthday-primary)]">
               *
             </span>
           </label>
         </div>
-        <p id="pdpa-notice" className="mt-2 pl-8 text-xs leading-relaxed text-zinc-400">
+        <p
+          id="pdpa-notice"
+          className="mt-2 pl-8 text-sm leading-relaxed text-[var(--birthday-muted)]"
+        >
           ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)
-          ระบบจะเก็บเฉพาะชื่อที่อยากให้เรียก อีเมล และวัน/เดือนเกิด (ไม่เก็บปีเกิด)
-          เพื่อวัตถุประสงค์ในการส่งอีเมลอวยพรวันเกิดเท่านั้น
+          ระบบไม่เก็บปีเกิดและใช้ข้อมูลเพื่อส่งอีเมลอวยพรวันเกิดเท่านั้น
           คุณสามารถแก้ไข ลบข้อมูล หรือยกเลิกการรับอีเมลได้ตลอดเวลา
         </p>
         {consentInvalid && (
-          <p id="consent-error" className="mt-2 pl-8 text-sm text-red-400">
-            กรุณาติ๊กยินยอมก่อนส่งแบบฟอร์ม
+          <p
+            id="consent-error"
+            className="mt-2 flex items-center gap-1.5 pl-8 text-sm text-[var(--birthday-error)]"
+          >
+            <AlertCircle
+              size={18}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="shrink-0"
+            />
+            <span>กรุณาติ๊กยินยอมก่อนส่งแบบฟอร์ม</span>
           </p>
         )}
       </div>
@@ -427,9 +549,21 @@ export function JoinForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="flex min-h-12 w-full items-center justify-center rounded-lg bg-zinc-100 px-4 py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--birthday-primary)] px-4 text-base font-medium text-[var(--birthday-on-primary)] transition-colors hover:bg-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? "กำลังส่งข้อมูล..." : "ลงทะเบียนรับคำอวยพรวันเกิด"}
+        {isSubmitting ? (
+          <>
+            <Loader2
+              size={18}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className="animate-spin"
+            />
+            <span>กำลังส่ง</span>
+          </>
+        ) : (
+          "สมัครรับอีเมล"
+        )}
       </button>
     </form>
   );

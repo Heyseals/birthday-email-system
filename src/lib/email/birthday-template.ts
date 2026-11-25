@@ -27,7 +27,7 @@ export function buildBirthdayEmail({
   const safeName = escapeHtml(fullName);
   const safeUrl = escapeHtml(unsubscribeUrl);
   const prefix = isTest ? "[TEST] " : "";
-  const subject = `${prefix}สุขสันต์วันเกิดคุณ ${fullName} 🎉`;
+  const subject = `${prefix}สุขสันต์วันเกิดคุณ ${fullName}`;
 
   const testBannerHtml = isTest
     ? `<div style="margin-bottom:16px;padding:10px 14px;border-radius:8px;background-color:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:13px;font-weight:600;">
@@ -49,9 +49,8 @@ export function buildBirthdayEmail({
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;border:1px solid #e4e4e7;overflow:hidden;">
             <tr>
               <td style="background:linear-gradient(135deg,#18181b 0%,#3f3f46 100%);padding:28px 28px 24px;color:#ffffff;text-align:center;">
-                <div style="font-size:36px;line-height:1;">🎂</div>
-                <h1 style="margin:12px 0 0;font-size:22px;font-weight:700;line-height:1.4;">
-                  สุขสันต์วันเกิดครับ/ค่ะ!
+                <h1 style="margin:0;font-size:22px;font-weight:700;line-height:1.4;">
+                  สุขสันต์วันเกิดครับ/ค่ะ
                 </h1>
               </td>
             </tr>

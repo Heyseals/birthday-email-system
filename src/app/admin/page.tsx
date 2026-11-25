@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { AdminDashboard } from "./admin-dashboard";
 import type { Customer, EmailLog } from "@/types/database";
@@ -76,9 +77,10 @@ async function AdminDashboardContent() {
       {(customersError || logsError) && (
         <div
           role="status"
-          className="rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200"
+          className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200"
         >
-          ⚠️ เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Supabase กรุณารีเฟรชหน้าใหม่อีกครั้ง
+          <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+          <span>เกิดข้อผิดพลาดในการโหลดข้อมูลจาก Supabase กรุณารีเฟรชหน้าใหม่อีกครั้ง</span>
         </div>
       )}
 

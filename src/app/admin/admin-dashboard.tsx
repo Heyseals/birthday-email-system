@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle, CircleCheck } from "lucide-react";
 import {
   createCustomerAction,
   deleteCustomerAction,
@@ -365,7 +366,10 @@ export function AdminDashboard({
           aria-live="polite"
           className="flex items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-100"
         >
-          <span>✅ {bannerMessage}</span>
+          <span className="flex items-center gap-2">
+            <CircleCheck size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+            <span>{bannerMessage}</span>
+          </span>
           <button
             type="button"
             onClick={() => setBannerMessage(null)}
@@ -780,9 +784,10 @@ export function AdminDashboard({
               {previewError && (
                 <div
                   role="status"
-                  className="mt-4 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+                  className="mt-4 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
                 >
-                  ⚠️ {previewError}
+                  <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+                  <span>{previewError}</span>
                 </div>
               )}
 
@@ -889,14 +894,18 @@ export function AdminDashboard({
                 <div
                   role="status"
                   aria-live="polite"
-                  className={`mt-4 rounded-lg border px-3.5 py-2.5 text-sm ${
+                  className={`mt-4 flex items-start gap-2 rounded-lg border px-3.5 py-2.5 text-sm ${
                     testSendMessage.type === "success"
                       ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-100"
                       : "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
                   }`}
                 >
-                  {testSendMessage.type === "success" ? "✅ " : "⚠️ "}
-                  {testSendMessage.text}
+                  {testSendMessage.type === "success" ? (
+                    <CircleCheck size={18} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />
+                  ) : (
+                    <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />
+                  )}
+                  <span>{testSendMessage.text}</span>
                 </div>
               )}
             </section>
@@ -941,9 +950,10 @@ export function AdminDashboard({
             <div
               role="status"
               aria-live="polite"
-              className="rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+              className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
             >
-              ⚠️ {formError}
+              <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+              <span>{formError}</span>
             </div>
           )}
 
@@ -1093,9 +1103,10 @@ export function AdminDashboard({
           <div
             role="status"
             aria-live="polite"
-            className="mt-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
+            className="mt-3 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/60 dark:text-red-200"
           >
-            ⚠️ {deleteError}
+            <AlertCircle size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0" />
+            <span>{deleteError}</span>
           </div>
         )}
 

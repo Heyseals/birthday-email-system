@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { AlertCircle, Cake, CircleCheck, Info } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ----------------------------------------------------------------
@@ -102,19 +103,19 @@ function StatusCard({
     success: {
       bg: "bg-green-900/30",
       border: "border-green-700",
-      icon: "✅",
+      icon: <CircleCheck size={20} strokeWidth={1.5} aria-hidden="true" className="mx-auto text-green-400" />,
       titleColor: "text-green-400",
     },
     already: {
       bg: "bg-yellow-900/30",
       border: "border-yellow-700",
-      icon: "ℹ️",
+      icon: <Info size={20} strokeWidth={1.5} aria-hidden="true" className="mx-auto text-yellow-400" />,
       titleColor: "text-yellow-400",
     },
     error: {
       bg: "bg-red-900/30",
       border: "border-red-700",
-      icon: "❌",
+      icon: <AlertCircle size={20} strokeWidth={1.5} aria-hidden="true" className="mx-auto text-red-400" />,
       titleColor: "text-red-400",
     },
   };
@@ -125,7 +126,7 @@ function StatusCard({
     <div
       className={`rounded-lg border ${c.border} ${c.bg} p-8 text-center shadow-lg max-w-md w-full`}
     >
-      <div className="text-5xl mb-4">{c.icon}</div>
+      <div className="mb-4 flex justify-center">{c.icon}</div>
       <h2 className={`text-xl font-bold mb-3 ${c.titleColor}`}>{title}</h2>
       <p className="text-gray-300 text-sm leading-relaxed">{message}</p>
       {type === "success" && (
@@ -162,7 +163,9 @@ export default function UnsubscribePage({
     <main className="min-h-screen bg-gray-950 flex flex-col items-center justify-center p-6">
       {/* Header */}
       <div className="mb-8 text-center">
-        <div className="text-4xl mb-2">🎂</div>
+        <div className="mb-2 flex justify-center">
+          <Cake size={20} strokeWidth={1.5} aria-hidden="true" className="text-gray-300" />
+        </div>
         <h1 className="text-2xl font-bold text-white">ระบบส่งอีเมลอวยพรวันเกิด</h1>
         <p className="text-gray-400 text-sm mt-1">ยกเลิกสมัครรับข้อมูล</p>
       </div>

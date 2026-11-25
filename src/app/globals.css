@@ -3,13 +3,40 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Warm Birthday Theme */
+  --birthday-bg: #fff8ee;
+  --birthday-surface: #ffffff;
+  --birthday-border: #e8d9c8;
+  --birthday-text: #3b2a26;
+  --birthday-muted: #6b5750;
+  --birthday-primary: #c8421f;
+  --birthday-primary-hover: #a93517;
+  --birthday-accent: #f2b632;
+  --birthday-soft: #fbe3dc;
+  --birthday-success: #1f7a6d;
+  --birthday-error: #b42318;
+  --birthday-on-primary: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-birthday-bg: var(--birthday-bg);
+  --color-birthday-surface: var(--birthday-surface);
+  --color-birthday-border: var(--birthday-border);
+  --color-birthday-text: var(--birthday-text);
+  --color-birthday-muted: var(--birthday-muted);
+  --color-birthday-primary: var(--birthday-primary);
+  --color-birthday-primary-hover: var(--birthday-primary-hover);
+  --color-birthday-accent: var(--birthday-accent);
+  --color-birthday-soft: var(--birthday-soft);
+  --color-birthday-success: var(--birthday-success);
+  --color-birthday-error: var(--birthday-error);
+  --color-birthday-on-primary: var(--birthday-on-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-thai: var(--font-ibm-plex-thai);
 }
 
 @media (prefers-color-scheme: dark) {
