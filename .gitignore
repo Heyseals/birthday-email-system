@@ -138,6 +138,9 @@ dist
 # กันไฟล์ env ทุกแบบ แต่เก็บ .env.example ไว้ให้ commit ได้
 .env*
 !.env.example
+env.local
+env.log
+env.download
 
 # Vercel
 .vercel
