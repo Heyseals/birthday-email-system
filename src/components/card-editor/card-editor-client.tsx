@@ -7,7 +7,10 @@ import {
   ArrowDown,
   ArrowUp,
   Copy,
+  Film,
   ImagePlus,
+  Pause,
+  Play,
   Redo2,
   Shapes,
   Sparkles,
@@ -15,6 +18,7 @@ import {
   Type,
   Undo2,
 } from "lucide-react";
+import { GifCanvasNode } from "./gif-canvas-node";
 import {
   CARD_TEMPLATES,
   THAI_FONTS,
@@ -112,11 +116,24 @@ export function CardEditorClient() {
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({});
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [stageScale, setStageScale] = useState(0.5);
+  const [isGifPlaying, setIsGifPlaying] = useState(() => {
+    if (typeof window !== "undefined") {
+      return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+    return true;
+  });
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifQuery, setGifQuery] = useState("birthday");
+  const [gifResults, setGifResults] = useState<
+    Array<{ id: string; title: string; previewUrl: string; url: string }>
+  >([]);
+  const [isSearchingGif, setIsSearchingGif] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const gifInputRef = useRef<HTMLInputElement>(null);
 
   const canvasHeight = getCanvasHeight(design.ratio);
 
@@ -354,6 +371,64 @@ export function CardEditorClient() {
     e.target.value = "";
   };
 
+  const handleUploadGif = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "image/gif") {
+      setStatusMsg("รองรับเฉพาะไฟล์ .gif เท่านั้น");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setStatusMsg("ขนาดไฟล์ GIF ต้องไม่เกิน 5 MB");
+      return;
+    }
+    const gifCount = design.elements.filter((el) => el.type === "gif").length;
+    if (gifCount >= 3) {
+      setStatusMsg("เพิ่ม GIF ได้สูงสุด 3 ชิ้นต่อการ์ด");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      addElement({
+        id: `gif-${Date.now()}`,
+        type: "gif",
+        src: reader.result,
+        alt: "ภาพเคลื่อนไหวอวยพรวันเกิด",
+        x: 220,
+        y: 220,
+        width: 240,
+        height: 240,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+      });
+      setShowGifPicker(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const searchGiphy = async (query: string) => {
+    setIsSearchingGif(true);
+    setStatusMsg(null);
+    try {
+      const res = await fetch(
+        `/api/gif/search?q=${encodeURIComponent(query)}`
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setStatusMsg(data.error ?? "ไม่สามารถค้นหา GIF ได้");
+      } else {
+        setGifResults(data.items ?? []);
+      }
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดในการเชื่อมต่อคลัง GIF");
+    } finally {
+      setIsSearchingGif(false);
+    }
+  };
+
   const moveLayer = (direction: "up" | "down") => {
     if (!selectedId) return;
     const idx = design.elements.findIndex((el) => el.id === selectedId);
@@ -415,6 +490,21 @@ export function CardEditorClient() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsGifPlaying((p) => !p)}
+            aria-label={isGifPlaying ? "หยุด GIF ชั่วคราว" : "เล่น GIF"}
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+          >
+            {isGifPlaying ? (
+              <Pause size={16} strokeWidth={1.5} />
+            ) : (
+              <Play size={16} strokeWidth={1.5} />
+            )}
+            <span className="hidden sm:inline">
+              {isGifPlaying ? "หยุด GIF" : "เล่น GIF"}
+            </span>
+          </button>
           <label htmlFor="card-ratio" className="text-sm text-[var(--birthday-muted)]">
             สัดส่วน:
           </label>
@@ -467,6 +557,14 @@ export function CardEditorClient() {
             </button>
             <button
               type="button"
+              onClick={() => setShowGifPicker((v) => !v)}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+            >
+              <Film size={18} strokeWidth={1.5} />
+              <span>GIF</span>
+            </button>
+            <button
+              type="button"
               onClick={() => handleAddShape("rect")}
               className="inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[var(--birthday-border)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
             >
@@ -490,6 +588,100 @@ export function CardEditorClient() {
             onChange={handleUploadImage}
             className="hidden"
           />
+          <input
+            ref={gifInputRef}
+            type="file"
+            accept="image/gif"
+            onChange={handleUploadGif}
+            className="hidden"
+          />
+
+          {showGifPicker && (
+            <div className="mt-4 space-y-3 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-bg)] p-3">
+              <button
+                type="button"
+                onClick={() => gifInputRef.current?.click()}
+                className="min-h-[44px] w-full rounded-lg bg-[var(--birthday-primary)] px-3 text-xs font-medium text-[var(--birthday-on-primary)] hover:bg-[var(--birthday-primary-hover)]"
+              >
+                อัปโหลดไฟล์ .gif จากเครื่อง
+              </button>
+              <div className="flex gap-1.5">
+                <input
+                  type="text"
+                  value={gifQuery}
+                  onChange={(e) => setGifQuery(e.target.value)}
+                  placeholder="ค้นหา GIF..."
+                  className="min-h-[40px] flex-1 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-2.5 text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => searchGiphy(gifQuery)}
+                  disabled={isSearchingGif}
+                  className="min-h-[40px] rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-xs font-medium"
+                >
+                  ค้นหา
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {["วันเกิด", "เค้ก", "ลูกโป่ง", "ปาร์ตี้"].map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      setGifQuery(tag);
+                      searchGiphy(tag);
+                    }}
+                    className="rounded bg-[var(--birthday-surface)] px-2 py-1 text-[11px] text-[var(--birthday-muted)] hover:text-[var(--birthday-primary)]"
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+              {gifResults.length > 0 && (
+                <div className="grid max-h-48 grid-cols-2 gap-1.5 overflow-y-auto">
+                  {gifResults.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        const gifCount = design.elements.filter(
+                          (el) => el.type === "gif"
+                        ).length;
+                        if (gifCount >= 3) {
+                          setStatusMsg("เพิ่ม GIF ได้สูงสุด 3 ชิ้นต่อการ์ด");
+                          return;
+                        }
+                        addElement({
+                          id: `gif-${Date.now()}`,
+                          type: "gif",
+                          src: item.url,
+                          alt: item.title,
+                          x: 220,
+                          y: 220,
+                          width: 240,
+                          height: 240,
+                          rotation: 0,
+                          scaleX: 1,
+                          scaleY: 1,
+                        });
+                        setShowGifPicker(false);
+                      }}
+                      className="overflow-hidden rounded border border-[var(--birthday-border)]"
+                    >
+                      <img
+                        src={item.previewUrl}
+                        alt={item.title}
+                        className="h-20 w-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-[10px] text-[var(--birthday-muted)]">
+                Powered by GIPHY
+              </p>
+            </div>
+          )}
 
           <div className="mt-5">
             <h3 className="mb-2 text-sm font-semibold text-[var(--birthday-text)]">
@@ -718,6 +910,20 @@ export function CardEditorClient() {
                       />
                     );
                   }
+                  if (el.type === "gif") {
+                    return (
+                      <GifCanvasNode
+                        key={el.id}
+                        element={el}
+                        isSelected={selectedId === el.id}
+                        isPlaying={isGifPlaying}
+                        onSelect={() => setSelectedId(el.id)}
+                        onChange={(attrs) => updateElement(el.id, attrs)}
+                        onDragMoveSnap={handleDragMoveSnap}
+                        onDragEndSnap={() => setSnapLines({})}
+                      />
+                    );
+                  }
                   return null;
                 })}
 
@@ -795,6 +1001,30 @@ export function CardEditorClient() {
                   <span>ลบ</span>
                 </button>
               </div>
+
+              {selectedElement.type === "gif" && (
+                <div className="space-y-3 border-t border-[var(--birthday-border)] pt-3">
+                  <div>
+                    <label
+                      htmlFor="prop-gif-alt"
+                      className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                    >
+                      คำอธิบายภาพ (Alt text)
+                    </label>
+                    <input
+                      id="prop-gif-alt"
+                      type="text"
+                      value={selectedElement.alt}
+                      onChange={(e) =>
+                        updateElement(selectedElement.id, {
+                          alt: e.target.value,
+                        })
+                      }
+                      className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] px-3 text-sm text-[var(--birthday-text)]"
+                    />
+                  </div>
+                </div>
+              )}
 
               {selectedElement.type === "text" && (
                 <div className="space-y-3 border-t border-[var(--birthday-border)] pt-3">

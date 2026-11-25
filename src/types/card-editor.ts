@@ -50,9 +50,19 @@ export interface StickerElement extends BaseElement {
   size: number;
 }
 
+export interface GifElement extends BaseElement {
+  type: "gif";
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+  locked?: boolean;
+}
+
 export type CardElement =
   | TextElement
   | ImageElement
+  | GifElement
   | ShapeElement
   | StickerElement;
 

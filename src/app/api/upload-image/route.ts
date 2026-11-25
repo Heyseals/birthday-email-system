@@ -5,7 +5,21 @@ import { checkRateLimit } from "@/lib/rate-limit";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const BUCKET_NAME = "birthday-images";
 
-function detectImageMime(bytes: Uint8Array): "image/jpeg" | "image/png" | "image/webp" | null {
+function detectImageMime(
+  bytes: Uint8Array
+): "image/jpeg" | "image/png" | "image/webp" | "image/gif" | null {
+  // GIF: GIF87a or GIF89a
+  if (
+    bytes.length >= 6 &&
+    bytes[0] === 0x47 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x38 &&
+    (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+    bytes[5] === 0x61
+  ) {
+    return "image/gif";
+  }
   // JPEG: FF D8 FF
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
     return "image/jpeg";
@@ -41,7 +55,9 @@ function detectImageMime(bytes: Uint8Array): "image/jpeg" | "image/png" | "image
   return null;
 }
 
-function getExtension(mime: "image/jpeg" | "image/png" | "image/webp"): string {
+function getExtension(
+  mime: "image/jpeg" | "image/png" | "image/webp" | "image/gif"
+): string {
   switch (mime) {
     case "image/jpeg":
       return "jpg";
@@ -49,6 +65,8 @@ function getExtension(mime: "image/jpeg" | "image/png" | "image/webp"): string {
       return "png";
     case "image/webp":
       return "webp";
+    case "image/gif":
+      return "gif";
   }
 }
 
