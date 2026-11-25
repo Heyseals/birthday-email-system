@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Link from "next/link";
 import { AlertCircle, CircleCheck, Loader2, Mail } from "lucide-react";
 import { THAI_MONTHS, getMaxDaysInMonth } from "@/types/database";
 
@@ -528,7 +529,13 @@ export function JoinForm() {
         >
           ตาม พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA)
           ระบบไม่เก็บปีเกิดและใช้ข้อมูลเพื่อส่งอีเมลอวยพรวันเกิดเท่านั้น
-          คุณสามารถแก้ไข ลบข้อมูล หรือยกเลิกการรับอีเมลได้ตลอดเวลา
+          คุณสามารถแก้ไข ลบข้อมูล หรือยกเลิกการรับอีเมลได้ตลอดเวลา อ่านเพิ่มเติมได้ที่{" "}
+          <Link
+            href="/privacy"
+            className="font-medium text-[var(--birthday-primary)] underline underline-offset-4 hover:text-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+          >
+            นโยบายความเป็นส่วนตัว
+          </Link>
         </p>
         {consentInvalid && (
           <p
