@@ -1,15 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Stage, Layer, Rect, Circle, Star, Text, Image as KonvaImage, Transformer, Line } from "react-konva";
+import { Stage, Layer, Rect, Circle, Star, Text, Image as KonvaImage, Transformer, Line, Path } from "react-konva";
 import type Konva from "konva";
 import {
   ArrowDown,
   ArrowUp,
   Copy,
+  Eraser,
   Film,
   ImagePlus,
   Pause,
+  PenTool,
   Play,
   Redo2,
   Shapes,
@@ -19,12 +21,15 @@ import {
   Undo2,
 } from "lucide-react";
 import { GifCanvasNode } from "./gif-canvas-node";
+import { ColorPickerPanel } from "./color-picker-panel";
+import { buildStrokePathData } from "./stroke-utils";
 import {
   CARD_TEMPLATES,
   THAI_FONTS,
   type CardDesign,
   type CardElement,
   type CardRatio,
+  type StrokeTool,
   type TextElement,
 } from "@/types/card-editor";
 
@@ -128,6 +133,14 @@ export function CardEditorClient() {
     Array<{ id: string; title: string; previewUrl: string; url: string }>
   >([]);
   const [isSearchingGif, setIsSearchingGif] = useState(false);
+
+  // Drawing Mode State
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawTool, setDrawTool] = useState<StrokeTool | "eraser">("pen");
+  const [drawColor, setDrawColor] = useState("#C8421F");
+  const [drawWidth, setDrawWidth] = useState(8);
+  const [drawOpacity, setDrawOpacity] = useState(1);
+  const [activePoints, setActivePoints] = useState<number[][] | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -347,10 +360,6 @@ export function CardEditorClient() {
       setStatusMsg("รองรับเฉพาะไฟล์ JPG, PNG และ WebP เท่านั้น");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setStatusMsg("ขนาดไฟล์ต้องไม่เกิน 5 MB");
-      return;
-    }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== "string") return;
@@ -376,10 +385,6 @@ export function CardEditorClient() {
     if (!file) return;
     if (file.type !== "image/gif") {
       setStatusMsg("รองรับเฉพาะไฟล์ .gif เท่านั้น");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setStatusMsg("ขนาดไฟล์ GIF ต้องไม่เกิน 5 MB");
       return;
     }
     const gifCount = design.elements.filter((el) => el.type === "gif").length;
@@ -554,6 +559,22 @@ export function CardEditorClient() {
             >
               <ImagePlus size={18} strokeWidth={1.5} />
               <span>รูปภาพ</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsDrawingMode((v) => !v);
+                setSelectedId(null);
+              }}
+              aria-pressed={isDrawingMode}
+              className={`inline-flex min-h-[44px] shrink-0 items-center justify-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors ${
+                isDrawingMode
+                  ? "border-[var(--birthday-primary)] bg-[var(--birthday-primary)] text-[var(--birthday-on-primary)]"
+                  : "border-[var(--birthday-border)] text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+              }`}
+            >
+              <PenTool size={18} strokeWidth={1.5} />
+              <span>{isDrawingMode ? "กำลังวาด" : "วาด"}</span>
             </button>
             <button
               type="button"
@@ -740,6 +761,7 @@ export function CardEditorClient() {
             style={{
               width: CANVAS_WIDTH * stageScale,
               height: canvasHeight * stageScale,
+              touchAction: isDrawingMode ? "none" : "auto",
             }}
           >
             <Stage
@@ -748,11 +770,67 @@ export function CardEditorClient() {
               height={canvasHeight * stageScale}
               scaleX={stageScale}
               scaleY={stageScale}
-              onMouseDown={(e) => {
-                if (e.target === e.target.getStage()) setSelectedId(null);
+              onPointerDown={(e) => {
+                if (!isDrawingMode) {
+                  if (e.target === e.target.getStage()) setSelectedId(null);
+                  return;
+                }
+                if (drawTool === "eraser") return;
+                const pos = e.target.getStage()?.getPointerPosition();
+                if (!pos) return;
+                const pressure =
+                  (e.evt as PointerEvent).pressure && (e.evt as PointerEvent).pressure > 0
+                    ? (e.evt as PointerEvent).pressure
+                    : 0.5;
+                setActivePoints([[pos.x / stageScale, pos.y / stageScale, pressure]]);
               }}
-              onTouchStart={(e) => {
-                if (e.target === e.target.getStage()) setSelectedId(null);
+              onPointerMove={(e) => {
+                if (!isDrawingMode || !activePoints || drawTool === "eraser") return;
+                const pos = e.target.getStage()?.getPointerPosition();
+                if (!pos) return;
+                const pressure =
+                  (e.evt as PointerEvent).pressure && (e.evt as PointerEvent).pressure > 0
+                    ? (e.evt as PointerEvent).pressure
+                    : 0.5;
+                setActivePoints((prev) =>
+                  prev
+                    ? [...prev, [pos.x / stageScale, pos.y / stageScale, pressure]]
+                    : null
+                );
+              }}
+              onPointerUp={() => {
+                if (!isDrawingMode || !activePoints || drawTool === "eraser") return;
+                if (activePoints.length > 1) {
+                  const strokeCount = design.elements.filter(
+                    (el) => el.type === "stroke"
+                  ).length;
+                  if (strokeCount >= 200) {
+                    setStatusMsg("วาดได้สูงสุด 200 เส้นต่อการ์ด");
+                  } else {
+                    const effectiveOpacity =
+                      drawTool === "highlighter"
+                        ? Math.min(drawOpacity, 0.45)
+                        : drawTool === "pencil"
+                          ? Math.min(drawOpacity, 0.85)
+                          : drawOpacity;
+                    addElement({
+                      id: `str-${Date.now()}`,
+                      type: "stroke",
+                      tool: drawTool,
+                      points: activePoints,
+                      color: drawColor,
+                      width: drawWidth,
+                      opacity: effectiveOpacity,
+                      x: 0,
+                      y: 0,
+                      rotation: 0,
+                      scaleX: 1,
+                      scaleY: 1,
+                    });
+                    setSelectedId(null);
+                  }
+                }
+                setActivePoints(null);
               }}
             >
               <Layer>
@@ -924,8 +1002,76 @@ export function CardEditorClient() {
                       />
                     );
                   }
+                  if (el.type === "stroke") {
+                    const pathData = buildStrokePathData(
+                      el.points,
+                      el.width,
+                      el.tool
+                    );
+                    return (
+                      <Path
+                        key={el.id}
+                        id={el.id}
+                        data={pathData}
+                        fill={el.color}
+                        opacity={el.opacity}
+                        x={el.x}
+                        y={el.y}
+                        rotation={el.rotation}
+                        scaleX={el.scaleX}
+                        scaleY={el.scaleY}
+                        draggable={!isDrawingMode}
+                        onClick={() => {
+                          if (isDrawingMode && drawTool === "eraser") {
+                            commitDesign({
+                              ...design,
+                              elements: design.elements.filter(
+                                (item) => item.id !== el.id
+                              ),
+                            });
+                            return;
+                          }
+                          if (!isDrawingMode) setSelectedId(el.id);
+                        }}
+                        onTap={() => {
+                          if (isDrawingMode && drawTool === "eraser") {
+                            commitDesign({
+                              ...design,
+                              elements: design.elements.filter(
+                                (item) => item.id !== el.id
+                              ),
+                            });
+                            return;
+                          }
+                          if (!isDrawingMode) setSelectedId(el.id);
+                        }}
+                        onDragEnd={(e) => {
+                          updateElement(el.id, {
+                            x: e.target.x(),
+                            y: e.target.y(),
+                          });
+                        }}
+                      />
+                    );
+                  }
                   return null;
                 })}
+
+                {/* Active Drawing Stroke */}
+                {activePoints && drawTool !== "eraser" && (
+                  <Path
+                    data={buildStrokePathData(activePoints, drawWidth, drawTool)}
+                    fill={drawColor}
+                    opacity={
+                      drawTool === "highlighter"
+                        ? Math.min(drawOpacity, 0.45)
+                        : drawTool === "pencil"
+                          ? Math.min(drawOpacity, 0.85)
+                          : drawOpacity
+                    }
+                    listening={false}
+                  />
+                )}
 
                 {/* Snap Guides */}
                 {snapLines.x !== undefined && (
@@ -954,10 +1100,101 @@ export function CardEditorClient() {
         {/* Right Properties Panel */}
         <aside className="order-3 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4 lg:col-span-3">
           <h2 className="mb-3 text-sm font-semibold text-[var(--birthday-text)]">
-            คุณสมบัติองค์ประกอบ
+            {isDrawingMode ? "เครื่องมือวาดรูป" : "คุณสมบัติองค์ประกอบ"}
           </h2>
 
-          {!selectedElement ? (
+          {isDrawingMode ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                {(
+                  [
+                    { id: "pen", label: "ปากกา" },
+                    { id: "pencil", label: "ดินสอ" },
+                    { id: "brush", label: "พู่กัน" },
+                    { id: "highlighter", label: "ไฮไลต์" },
+                  ] as const
+                ).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setDrawTool(t.id)}
+                    className={`min-h-[44px] rounded-lg border px-3 text-xs font-medium ${
+                      drawTool === t.id
+                        ? "border-[var(--birthday-primary)] bg-[var(--birthday-soft)] text-[var(--birthday-primary)]"
+                        : "border-[var(--birthday-border)] text-[var(--birthday-text)]"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setDrawTool("eraser")}
+                  className={`col-span-2 inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 text-xs font-medium ${
+                    drawTool === "eraser"
+                      ? "border-[var(--birthday-error)] bg-[var(--birthday-soft)] text-[var(--birthday-error)]"
+                      : "border-[var(--birthday-border)] text-[var(--birthday-text)]"
+                  }`}
+                >
+                  <Eraser size={16} strokeWidth={1.5} />
+                  <span>ยางลบ (แตะที่เส้นเพื่อลบ)</span>
+                </button>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="draw-width"
+                  className="mb-1 flex justify-between text-xs font-medium text-[var(--birthday-text)]"
+                >
+                  <span>ขนาดเส้น</span>
+                  <span>{drawWidth} px</span>
+                </label>
+                <input
+                  id="draw-width"
+                  type="range"
+                  min={1}
+                  max={60}
+                  value={drawWidth}
+                  onChange={(e) => setDrawWidth(Number(e.target.value))}
+                  className="w-full accent-[var(--birthday-primary)]"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="draw-opacity"
+                  className="mb-1 flex justify-between text-xs font-medium text-[var(--birthday-text)]"
+                >
+                  <span>ความโปร่งใส</span>
+                  <span>{Math.round(drawOpacity * 100)}%</span>
+                </label>
+                <input
+                  id="draw-opacity"
+                  type="range"
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={drawOpacity}
+                  onChange={(e) => setDrawOpacity(Number(e.target.value))}
+                  className="w-full accent-[var(--birthday-primary)]"
+                />
+              </div>
+
+              <ColorPickerPanel
+                color={drawColor}
+                onChange={setDrawColor}
+                label="สีเส้นวาด"
+              />
+
+              <button
+                type="button"
+                onClick={() => setIsDrawingMode(false)}
+                className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-bg)]"
+              >
+                ออกจากโหมดวาด
+              </button>
+            </div>
+          ) : !selectedElement ? (
             <p className="text-sm text-[var(--birthday-muted)]">
               แตะหรือคลิกที่องค์ประกอบบนการ์ดเพื่อแก้ไข
             </p>

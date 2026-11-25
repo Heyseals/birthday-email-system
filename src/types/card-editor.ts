@@ -59,12 +59,24 @@ export interface GifElement extends BaseElement {
   locked?: boolean;
 }
 
+export type StrokeTool = "pen" | "pencil" | "brush" | "highlighter";
+
+export interface StrokeElement extends BaseElement {
+  type: "stroke";
+  tool: StrokeTool;
+  points: number[][];
+  color: string;
+  width: number;
+  opacity: number;
+}
+
 export type CardElement =
   | TextElement
   | ImageElement
   | GifElement
   | ShapeElement
-  | StickerElement;
+  | StickerElement
+  | StrokeElement;
 
 export interface CardDesign {
   version: 1;

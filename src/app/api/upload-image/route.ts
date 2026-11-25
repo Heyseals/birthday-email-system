@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { checkRateLimit } from "@/lib/rate-limit";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
 const BUCKET_NAME = "birthday-images";
 
 function detectImageMime(
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: "ขนาดไฟล์เกิน 5 MB กรุณาเลือกรูปที่เล็กกว่านี้" },
+        { error: "ขนาดไฟล์เกิน 15 MB กรุณาเลือกรูปที่เล็กกว่านี้" },
         { status: 400 }
       );
     }
