@@ -68,7 +68,8 @@ dialog::backdrop {
 }
 
 .admin-tab[aria-selected="true"] {
-  color: var(--foreground);
+  color: var(--birthday-primary);
+  font-weight: 600;
 }
 
 .admin-tab[aria-selected="true"]::after {

@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 
 interface PublicShellProps {
   children: ReactNode;
-  maxWidth?: "narrow" | "reading";
+  maxWidth?: "narrow" | "reading" | "wide";
   showJoinLinkInHeader?: boolean;
+  showBackgroundPattern?: boolean;
+  centerVertically?: boolean;
 }
 
 export function TopBuntingBar() {
@@ -24,17 +26,76 @@ export function PublicShell({
   children,
   maxWidth = "reading",
   showJoinLinkInHeader = true,
+  showBackgroundPattern = true,
+  centerVertically = false,
 }: PublicShellProps) {
   const widthClass =
-    maxWidth === "narrow" ? "max-w-[460px]" : "max-w-[640px]";
+    maxWidth === "narrow"
+      ? "max-w-[30rem]"
+      : maxWidth === "wide"
+        ? "max-w-6xl"
+        : "max-w-[42.5rem]";
 
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--birthday-bg)] text-[var(--birthday-text)] font-[family-name:var(--font-ibm-plex-thai)]">
+    <div
+      className="relative flex min-h-screen flex-col overflow-x-clip bg-[var(--birthday-bg)] text-[var(--birthday-text)] font-[family-name:var(--font-ibm-plex-thai)]"
+      style={{
+        backgroundImage:
+          "radial-gradient(circle at 0% 25%, rgba(251, 227, 220, 0.35), transparent 36%), radial-gradient(circle at 100% 75%, rgba(242, 182, 50, 0.12), transparent 36%)",
+      }}
+    >
+      {showBackgroundPattern && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 hidden overflow-hidden xl:block"
+        >
+          <svg
+            className="absolute top-24 left-4 h-80 w-24 opacity-25 2xl:left-8"
+            viewBox="0 0 96 320"
+            fill="none"
+          >
+            <circle cx="24" cy="32" r="5" fill="var(--birthday-accent)" />
+            <polygon points="58,64 68,80 48,80" fill="var(--birthday-primary)" />
+            <line
+              x1="16"
+              y1="128"
+              x2="34"
+              y2="114"
+              stroke="var(--birthday-success)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <circle cx="64" cy="180" r="4" fill="var(--birthday-soft)" />
+            <polygon points="22,232 34,224 30,240" fill="var(--birthday-accent)" />
+            <circle cx="52" cy="284" r="4" fill="var(--birthday-primary)" />
+          </svg>
+          <svg
+            className="absolute top-36 right-4 h-80 w-24 opacity-25 2xl:right-8"
+            viewBox="0 0 96 320"
+            fill="none"
+          >
+            <polygon points="62,28 74,42 54,46" fill="var(--birthday-accent)" />
+            <circle cx="32" cy="92" r="4.5" fill="var(--birthday-success)" />
+            <line
+              x1="54"
+              y1="146"
+              x2="72"
+              y2="160"
+              stroke="var(--birthday-primary)"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <circle cx="26" cy="212" r="5" fill="var(--birthday-accent)" />
+            <polygon points="64,252 72,266 54,264" fill="var(--birthday-primary)" />
+            <circle cx="38" cy="296" r="4" fill="var(--birthday-success)" />
+          </svg>
+        </div>
+      )}
       <TopBuntingBar />
 
-      <header className="border-b border-[var(--birthday-border)]/80">
+      <header className="relative border-b border-[var(--birthday-border)]/80">
         <div
-          className={`mx-auto flex w-full ${widthClass} items-center justify-between gap-4 px-5 py-3 sm:px-6`}
+          className={`mx-auto flex w-full ${widthClass} items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8`}
         >
           <Link
             href="/"
@@ -54,13 +115,17 @@ export function PublicShell({
         </div>
       </header>
 
-      <main className={`mx-auto w-full flex-1 ${widthClass} px-5 pt-10 pb-14 sm:px-6`}>
+      <main
+        className={`relative mx-auto w-full flex-1 ${widthClass} px-4 pt-8 pb-12 sm:px-6 sm:pt-10 sm:pb-14 lg:px-8 lg:pt-12 lg:pb-16 ${
+          centerVertically ? "flex flex-col justify-center" : ""
+        }`}
+      >
         {children}
       </main>
 
-      <footer className="border-t border-[var(--birthday-border)]">
+      <footer className="relative border-t border-[var(--birthday-border)]">
         <div
-          className={`mx-auto flex w-full ${widthClass} flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-6 text-xs text-[var(--birthday-muted)] sm:px-6`}
+          className={`mx-auto flex w-full ${widthClass} flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-6 text-xs text-[var(--birthday-muted)] sm:px-6 lg:px-8`}
         >
           <p>
             ระบบอวยพรวันเกิดอัตโนมัติ · ใช้ข้อมูลเพื่อส่งคำอวยพรในวันเกิดเท่านั้น

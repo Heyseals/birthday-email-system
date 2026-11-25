@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { AlertCircle, ArrowUpRight, Cake } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { TopBuntingBar } from "@/components/public-shell";
 import { AdminDashboard } from "./admin-dashboard";
 import type { Customer, EmailLog } from "@/types/database";
 
@@ -76,9 +77,9 @@ async function AdminDashboardContent() {
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/join"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-[var(--birthday-primary)] px-4 py-2 text-sm font-medium text-[var(--birthday-on-primary)] transition-colors hover:bg-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+            className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[var(--birthday-primary)] bg-[var(--birthday-soft)] px-4 py-2 text-sm font-medium text-[var(--birthday-primary)] transition-colors hover:bg-[var(--birthday-primary)] hover:text-[var(--birthday-on-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
           >
-            <span>ไปหน้าลงทะเบียน (/join)</span>
+            <span>เปิดหน้าลงทะเบียน</span>
             <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
           </Link>
 
@@ -117,14 +118,7 @@ async function AdminDashboardContent() {
 export default function AdminPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[var(--birthday-bg)] text-[var(--birthday-text)] font-[family-name:var(--font-ibm-plex-thai)]">
-      <div
-        aria-hidden="true"
-        className="h-1.5 w-full"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(90deg, var(--birthday-primary) 0 24px, var(--birthday-accent) 24px 48px, var(--birthday-soft) 48px 72px, var(--birthday-success) 72px 96px)",
-        }}
-      />
+      <TopBuntingBar />
       <main className="flex-1 px-4 py-8 sm:px-6">
         <Suspense
           fallback={
