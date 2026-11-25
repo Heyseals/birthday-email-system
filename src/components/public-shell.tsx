@@ -33,7 +33,7 @@ export function PublicShell({
     maxWidth === "narrow"
       ? "max-w-[30rem]"
       : maxWidth === "wide"
-        ? "max-w-6xl"
+        ? "max-w-[clamp(68.75rem,85vw,75rem)] min-[1920px]:max-w-[87.5rem]"
         : "max-w-[42.5rem]";
 
   return (
@@ -47,10 +47,10 @@ export function PublicShell({
       {showBackgroundPattern && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed inset-0 hidden overflow-hidden xl:block"
+          className="pointer-events-none fixed inset-0 hidden justify-between overflow-hidden xl:flex"
         >
           <svg
-            className="absolute top-24 left-4 h-80 w-24 opacity-25 2xl:left-8"
+            className="mt-24 h-[60vh] w-[10vw] max-w-[10rem] opacity-25"
             viewBox="0 0 96 320"
             fill="none"
           >
@@ -70,7 +70,7 @@ export function PublicShell({
             <circle cx="52" cy="284" r="4" fill="var(--birthday-primary)" />
           </svg>
           <svg
-            className="absolute top-36 right-4 h-80 w-24 opacity-25 2xl:right-8"
+            className="mt-32 h-[60vh] w-[10vw] max-w-[10rem] opacity-25"
             viewBox="0 0 96 320"
             fill="none"
           >
