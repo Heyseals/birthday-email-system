@@ -134,3 +134,14 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# กันไฟล์ env ทุกแบบ แต่เก็บ .env.example ไว้ให้ commit ได้
+.env*
+!.env.example
+
+# Vercel
+.vercel
+
+# Windows / editor
+Thumbs.db
+.DS_Store
