@@ -15,3 +15,8 @@
 - [ ] **ขั้นที่ 7:** ทำหน้า `/unsubscribe?token=...` อัปเดตสถานะฝั่ง Server — **กำลังทำ**
 - [ ] **ขั้นที่ 8:** ทำ Daily Morning Job (`vercel.json` + Vercel Schedules 08:00 น. + กันส่งซ้ำ + กรณี 29 ก.พ.)
 - [ ] **ขั้นที่ 9:** Deploy ขึ้น Vercel + ใส่ Env + ทดสอบ End-to-End
+- [ ] **ขั้นที่ 10:** อัปเดตตาราง `customers` รองรับ Double Opt-in (`status` = `pending`/`confirmed` โดยข้อมูลเดิมเป็น `confirmed`, `confirm_token`, `confirm_token_expires_at`, `manage_token`) โดยคง RLS ห้าม `anon` เขียนตรงๆ และไม่กระทบ Flow เดิม
+- [ ] **ขั้นที่ 11:** ทำหน้า `/join` (สาธารณะ: ชื่อที่อยากให้เรียก, อีเมล, วัน/เดือนเกิด ไม่เก็บปี, checkbox PDPA ไม่ติ๊กไว้ล่วงหน้า) + API/Server Action ฝั่งเซิร์ฟเวอร์ด้วย Secret Key (ตรวจ input, honeypot, rate limit ต่อ IP, กันอีเมลซ้ำแบบตอบข้อความกลางๆ) บันทึกเป็น `pending` และส่งอีเมลยืนยัน *(หมายเหตุ: Resend ยังไม่ผูกโดเมน จึงทดสอบส่งอีเมลยืนยันได้เฉพาะอีเมลที่ใช้สมัคร Resend)*
+- [ ] **ขั้นที่ 12:** ทำหน้า `/confirm?token=...` ตรวจ `confirm_token` และวันหมดอายุเพื่อเปลี่ยนสถานะเป็น `confirmed` + อัปเดตตัวส่งอีเมลรายวันให้ส่งเฉพาะ `confirmed` และไม่ `unsubscribed`
+- [ ] **ขั้นที่ 13:** ทำหน้า `/manage?token=...` ให้ลูกค้าแก้ไขชื่อ/วันเดือนเกิด หรือลบข้อมูลตัวเองผ่านฝั่งเซิร์ฟเวอร์ด้วย token แบบเดียวกับ unsubscribe
+- [ ] **ขั้นที่ 14:** อัปเดตหน้า `/admin` เพิ่มปุ่มคัดลอกลิงก์ `/join`, แสดง QR Code ของลิงก์ และตัวกรองสถานะ `pending` / `confirmed` (ไม่กระทบการทำงานเดิม)
