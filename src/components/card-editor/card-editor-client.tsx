@@ -136,11 +136,12 @@ export function CardEditorClient() {
 
   // Drawing Mode State
   const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [drawTool, setDrawTool] = useState<StrokeTool | "eraser">("pen");
+  const [drawTool, setDrawTool] = useState<StrokeTool>("pen");
   const [drawColor, setDrawColor] = useState("#C8421F");
   const [drawWidth, setDrawWidth] = useState(8);
   const [drawOpacity, setDrawOpacity] = useState(1);
   const [activePoints, setActivePoints] = useState<number[][] | null>(null);
+  const [eraserCursor, setEraserCursor] = useState<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -775,31 +776,36 @@ export function CardEditorClient() {
                   if (e.target === e.target.getStage()) setSelectedId(null);
                   return;
                 }
-                if (drawTool === "eraser") return;
                 const pos = e.target.getStage()?.getPointerPosition();
                 if (!pos) return;
+                const x = pos.x / stageScale;
+                const y = pos.y / stageScale;
+                if (drawTool === "eraser") setEraserCursor({ x, y });
                 const pressure =
                   (e.evt as PointerEvent).pressure && (e.evt as PointerEvent).pressure > 0
                     ? (e.evt as PointerEvent).pressure
                     : 0.5;
-                setActivePoints([[pos.x / stageScale, pos.y / stageScale, pressure]]);
+                setActivePoints([[x, y, pressure]]);
               }}
               onPointerMove={(e) => {
-                if (!isDrawingMode || !activePoints || drawTool === "eraser") return;
+                if (!isDrawingMode) return;
                 const pos = e.target.getStage()?.getPointerPosition();
                 if (!pos) return;
+                const x = pos.x / stageScale;
+                const y = pos.y / stageScale;
+                if (drawTool === "eraser") setEraserCursor({ x, y });
+                if (!activePoints) return;
                 const pressure =
                   (e.evt as PointerEvent).pressure && (e.evt as PointerEvent).pressure > 0
                     ? (e.evt as PointerEvent).pressure
                     : 0.5;
                 setActivePoints((prev) =>
-                  prev
-                    ? [...prev, [pos.x / stageScale, pos.y / stageScale, pressure]]
-                    : null
+                  prev ? [...prev, [x, y, pressure]] : null
                 );
               }}
+              onPointerLeave={() => setEraserCursor(null)}
               onPointerUp={() => {
-                if (!isDrawingMode || !activePoints || drawTool === "eraser") return;
+                if (!isDrawingMode || !activePoints) return;
                 if (activePoints.length > 1) {
                   const strokeCount = design.elements.filter(
                     (el) => el.type === "stroke"
@@ -812,13 +818,15 @@ export function CardEditorClient() {
                         ? Math.min(drawOpacity, 0.45)
                         : drawTool === "pencil"
                           ? Math.min(drawOpacity, 0.85)
-                          : drawOpacity;
+                          : drawTool === "eraser"
+                            ? 1
+                            : drawOpacity;
                     addElement({
                       id: `str-${Date.now()}`,
                       type: "stroke",
                       tool: drawTool,
                       points: activePoints,
-                      color: drawColor,
+                      color: drawTool === "eraser" ? "#000000" : drawColor,
                       width: drawWidth,
                       opacity: effectiveOpacity,
                       x: 0,
@@ -1003,95 +1011,91 @@ export function CardEditorClient() {
                     );
                   }
                   if (el.type === "stroke") {
-                    const pathData = buildStrokePathData(
-                      el.points,
-                      el.width,
-                      el.tool
-                    );
-                    return (
-                      <Path
-                        key={el.id}
-                        id={el.id}
-                        data={pathData}
-                        fill={el.color}
-                        opacity={el.opacity}
-                        x={el.x}
-                        y={el.y}
-                        rotation={el.rotation}
-                        scaleX={el.scaleX}
-                        scaleY={el.scaleY}
-                        draggable={!isDrawingMode}
-                        onClick={() => {
-                          if (isDrawingMode && drawTool === "eraser") {
-                            commitDesign({
-                              ...design,
-                              elements: design.elements.filter(
-                                (item) => item.id !== el.id
-                              ),
-                            });
-                            return;
-                          }
-                          if (!isDrawingMode) setSelectedId(el.id);
-                        }}
-                        onTap={() => {
-                          if (isDrawingMode && drawTool === "eraser") {
-                            commitDesign({
-                              ...design,
-                              elements: design.elements.filter(
-                                (item) => item.id !== el.id
-                              ),
-                            });
-                            return;
-                          }
-                          if (!isDrawingMode) setSelectedId(el.id);
-                        }}
-                        onDragEnd={(e) => {
-                          updateElement(el.id, {
-                            x: e.target.x(),
-                            y: e.target.y(),
-                          });
-                        }}
-                      />
-                    );
+                    return null;
                   }
                   return null;
                 })}
 
-                {/* Active Drawing Stroke */}
-                {activePoints && drawTool !== "eraser" && (
+                <Transformer ref={trRef} rotateEnabled enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]} />
+              </Layer>
+
+              {/* Layer แยกสำหรับเส้นวาดและยางลบ (destination-out) */}
+              <Layer>
+                {design.elements.map((el) => {
+                  if (el.type !== "stroke") return null;
+                  const pathData = buildStrokePathData(
+                    el.points,
+                    el.width,
+                    el.tool
+                  );
+                  return (
+                    <Path
+                      key={el.id}
+                      id={el.id}
+                      data={pathData}
+                      fill={el.color}
+                      opacity={el.opacity}
+                      globalCompositeOperation={
+                        el.tool === "eraser" ? "destination-out" : "source-over"
+                      }
+                      x={el.x}
+                      y={el.y}
+                      rotation={el.rotation}
+                      scaleX={el.scaleX}
+                      scaleY={el.scaleY}
+                      listening={!isDrawingMode && el.tool !== "eraser"}
+                      draggable={!isDrawingMode && el.tool !== "eraser"}
+                      onClick={() => {
+                        if (!isDrawingMode && el.tool !== "eraser") {
+                          setSelectedId(el.id);
+                        }
+                      }}
+                      onTap={() => {
+                        if (!isDrawingMode && el.tool !== "eraser") {
+                          setSelectedId(el.id);
+                        }
+                      }}
+                      onDragEnd={(e) => {
+                        updateElement(el.id, {
+                          x: e.target.x(),
+                          y: e.target.y(),
+                        });
+                      }}
+                    />
+                  );
+                })}
+
+                {activePoints && (
                   <Path
                     data={buildStrokePathData(activePoints, drawWidth, drawTool)}
-                    fill={drawColor}
+                    fill={drawTool === "eraser" ? "#000000" : drawColor}
                     opacity={
                       drawTool === "highlighter"
                         ? Math.min(drawOpacity, 0.45)
                         : drawTool === "pencil"
                           ? Math.min(drawOpacity, 0.85)
-                          : drawOpacity
+                          : drawTool === "eraser"
+                            ? 1
+                            : drawOpacity
+                    }
+                    globalCompositeOperation={
+                      drawTool === "eraser" ? "destination-out" : "source-over"
                     }
                     listening={false}
                   />
                 )}
 
-                {/* Snap Guides */}
-                {snapLines.x !== undefined && (
-                  <Line
-                    points={[snapLines.x, 0, snapLines.x, canvasHeight]}
+                {isDrawingMode && drawTool === "eraser" && eraserCursor && (
+                  <Circle
+                    x={eraserCursor.x}
+                    y={eraserCursor.y}
+                    radius={drawWidth / 2}
                     stroke="#C8421F"
                     strokeWidth={1.5}
-                    dash={[6, 4]}
+                    dash={[4, 3]}
+                    listening={false}
                   />
                 )}
-                {snapLines.y !== undefined && (
-                  <Line
-                    points={[0, snapLines.y, CANVAS_WIDTH, snapLines.y]}
-                    stroke="#C8421F"
-                    strokeWidth={1.5}
-                    dash={[6, 4]}
-                  />
-                )}
-
-                <Transformer ref={trRef} rotateEnabled enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]} />
               </Layer>
             </Stage>
           </div>
@@ -1137,7 +1141,7 @@ export function CardEditorClient() {
                   }`}
                 >
                   <Eraser size={16} strokeWidth={1.5} />
-                  <span>ยางลบ (แตะที่เส้นเพื่อลบ)</span>
+                  <span>ยางลบ (ลากเพื่อลบ)</span>
                 </button>
               </div>
 
@@ -1153,7 +1157,7 @@ export function CardEditorClient() {
                   id="draw-width"
                   type="range"
                   min={1}
-                  max={60}
+                  max={100}
                   value={drawWidth}
                   onChange={(e) => setDrawWidth(Number(e.target.value))}
                   className="w-full accent-[var(--birthday-primary)]"

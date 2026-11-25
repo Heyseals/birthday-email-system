@@ -59,7 +59,7 @@ export interface GifElement extends BaseElement {
   locked?: boolean;
 }
 
-export type StrokeTool = "pen" | "pencil" | "brush" | "highlighter";
+export type StrokeTool = "pen" | "pencil" | "brush" | "highlighter" | "eraser";
 
 export interface StrokeElement extends BaseElement {
   type: "stroke";

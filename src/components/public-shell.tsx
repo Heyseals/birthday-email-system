@@ -104,14 +104,22 @@ export function PublicShell({
             ระบบอวยพรวันเกิดอัตโนมัติ
           </Link>
 
-          {showJoinLinkInHeader && (
+          <nav aria-label="เมนูหลัก" className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             <Link
-              href="/join"
-              className="inline-flex min-h-[44px] items-center text-sm font-medium text-[var(--birthday-primary)] underline-offset-4 hover:text-[var(--birthday-primary-hover)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+              href="/create"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-[var(--birthday-primary)] bg-[var(--birthday-soft)] px-4 text-sm font-semibold text-[var(--birthday-primary)] transition-colors hover:bg-[var(--birthday-primary)] hover:text-[var(--birthday-on-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
             >
-              สมัครรับอีเมล
+              สร้างการ์ด
             </Link>
-          )}
+            {showJoinLinkInHeader && (
+              <Link
+                href="/join"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-[var(--birthday-primary)] px-4 text-sm font-semibold text-[var(--birthday-on-primary)] shadow-xs transition-colors hover:bg-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+              >
+                สมัครรับอีเมล
+              </Link>
+            )}
+          </nav>
         </div>
       </header>
 
@@ -130,12 +138,24 @@ export function PublicShell({
           <p>
             ระบบอวยพรวันเกิดอัตโนมัติ · ใช้ข้อมูลเพื่อส่งคำอวยพรในวันเกิดเท่านั้น
           </p>
-          <nav aria-label="ลิงก์ท้ายหน้า" className="flex items-center gap-4">
+          <nav aria-label="ลิงก์ท้ายหน้า" className="flex flex-wrap items-center gap-4">
             <Link
               href="/"
               className="inline-flex min-h-[44px] items-center underline-offset-4 hover:text-[var(--birthday-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
             >
               หน้าแรก
+            </Link>
+            <Link
+              href="/create"
+              className="inline-flex min-h-[44px] items-center underline-offset-4 hover:text-[var(--birthday-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+            >
+              สร้างการ์ด
+            </Link>
+            <Link
+              href="/join"
+              className="inline-flex min-h-[44px] items-center underline-offset-4 hover:text-[var(--birthday-primary)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+            >
+              สมัครรับอีเมล
             </Link>
             <Link
               href="/privacy"
