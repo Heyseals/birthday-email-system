@@ -37,10 +37,46 @@ export interface ImageElement extends BaseElement {
   height: number;
 }
 
+export type ShapeKind =
+  | "rect"
+  | "rounded-rect"
+  | "circle"
+  | "oval"
+  | "triangle"
+  | "right-triangle"
+  | "diamond"
+  | "pentagon"
+  | "hexagon"
+  | "star-4"
+  | "star-5"
+  | "star-6"
+  | "heart"
+  | "arrow-right"
+  | "arrow-left"
+  | "arrow-up"
+  | "arrow-down"
+  | "speech-bubble"
+  | "cloud"
+  | "lightning"
+  | "moon"
+  | "flower"
+  | "balloon"
+  | "ribbon"
+  | "line"
+  | "plus"
+  | "cross"
+  | "ring"
+  | "tag"
+  | "banner";
+
 export interface ShapeElement extends BaseElement {
   type: "shape";
-  shape: "rect" | "circle" | "star";
+  shape: ShapeKind;
   fill: string;
+  stroke?: string;
+  strokeWidth?: number;
+  dash?: number[];
+  cornerRadius?: number;
   width: number;
   height: number;
 }

@@ -23,6 +23,8 @@ import {
 import { GifCanvasNode } from "./gif-canvas-node";
 import { ColorPickerPanel } from "./color-picker-panel";
 import { LayersPanel } from "./layers-panel";
+import { PaintRibbon } from "./paint-ribbon";
+import { ShapeNode } from "./shape-node";
 import { buildStrokePathData } from "./stroke-utils";
 import {
   CARD_TEMPLATES,
@@ -30,6 +32,7 @@ import {
   type CardDesign,
   type CardElement,
   type CardRatio,
+  type ShapeKind,
   type StrokeTool,
   type TextElement,
 } from "@/types/card-editor";
@@ -139,6 +142,7 @@ export function CardEditorClient() {
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [drawTool, setDrawTool] = useState<StrokeTool>("pen");
   const [drawColor, setDrawColor] = useState("#C8421F");
+  const [secondaryColor, setSecondaryColor] = useState("#F2B632");
   const [drawWidth, setDrawWidth] = useState(8);
   const [drawOpacity, setDrawOpacity] = useState(1);
   const [activePoints, setActivePoints] = useState<number[][] | null>(null);
@@ -340,7 +344,7 @@ export function CardEditorClient() {
     });
   };
 
-  const handleAddShape = (shape: "rect" | "circle" | "star") => {
+  const handleAddShape = (shape: ShapeKind) => {
     addElement({
       id: `shp-${Date.now()}`,
       type: "shape",
@@ -349,7 +353,9 @@ export function CardEditorClient() {
       y: canvasHeight / 2 - 60,
       width: 120,
       height: 120,
-      fill: "#F2B632",
+      fill: drawColor,
+      stroke: secondaryColor,
+      strokeWidth: 0,
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
@@ -546,6 +552,46 @@ export function CardEditorClient() {
           {statusMsg}
         </div>
       )}
+
+      {/* Paint-style Ribbon */}
+      <PaintRibbon
+        isDrawingMode={isDrawingMode}
+        isEraser={drawTool === "eraser"}
+        primaryColor={drawColor}
+        secondaryColor={secondaryColor}
+        onSelectMode={(mode) => {
+          if (mode === "select") {
+            setIsDrawingMode(false);
+          } else if (mode === "draw") {
+            setIsDrawingMode(true);
+            if (drawTool === "eraser") setDrawTool("pen");
+            setSelectedId(null);
+          } else {
+            setIsDrawingMode(true);
+            setDrawTool("eraser");
+            setSelectedId(null);
+          }
+        }}
+        onAddText={handleAddText}
+        onUploadImage={() => fileInputRef.current?.click()}
+        onToggleGif={() => setShowGifPicker((v) => !v)}
+        onAddShape={handleAddShape}
+        onSwapColors={() => {
+          const prev = drawColor;
+          setDrawColor(secondaryColor);
+          setSecondaryColor(prev);
+        }}
+        onChangePrimaryColor={(c) => {
+          setDrawColor(c);
+          if (selectedElement && (selectedElement.type === "shape" || selectedElement.type === "text")) {
+            updateElement(selectedElement.id, { fill: c });
+          }
+        }}
+        onOpenLayers={() => {
+          setIsDrawingMode(false);
+          setRightTab("layers");
+        }}
+      />
 
       {/* Main Editor Grid */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
@@ -925,72 +971,14 @@ export function CardEditorClient() {
                     );
                   }
                   if (el.type === "shape") {
-                    if (el.shape === "circle") {
-                      return (
-                        <Circle
-                          key={el.id}
-                          id={el.id}
-                          x={el.x}
-                          y={el.y}
-                          radius={el.width / 2}
-                          fill={el.fill}
-                          rotation={el.rotation}
-                          scaleX={el.scaleX}
-                          scaleY={el.scaleY}
-                          draggable
-                          onClick={() => setSelectedId(el.id)}
-                          onTap={() => setSelectedId(el.id)}
-                          onDragMove={(e) => handleDragMoveSnap(e.target)}
-                          onDragEnd={(e) => {
-                            setSnapLines({});
-                            updateElement(el.id, {
-                              x: e.target.x(),
-                              y: e.target.y(),
-                            });
-                          }}
-                        />
-                      );
-                    }
-                    if (el.shape === "star") {
-                      return (
-                        <Star
-                          key={el.id}
-                          id={el.id}
-                          x={el.x}
-                          y={el.y}
-                          numPoints={5}
-                          innerRadius={25}
-                          outerRadius={55}
-                          fill={el.fill}
-                          draggable
-                          onClick={() => setSelectedId(el.id)}
-                          onTap={() => setSelectedId(el.id)}
-                        />
-                      );
-                    }
                     return (
-                      <Rect
+                      <ShapeNode
                         key={el.id}
-                        id={el.id}
-                        x={el.x}
-                        y={el.y}
-                        width={el.width}
-                        height={el.height}
-                        fill={el.fill}
-                        rotation={el.rotation}
-                        scaleX={el.scaleX}
-                        scaleY={el.scaleY}
-                        draggable
-                        onClick={() => setSelectedId(el.id)}
-                        onTap={() => setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMoveSnap(e.target)}
-                        onDragEnd={(e) => {
-                          setSnapLines({});
-                          updateElement(el.id, {
-                            x: e.target.x(),
-                            y: e.target.y(),
-                          });
-                        }}
+                        el={el}
+                        isDrawingMode={isDrawingMode}
+                        onSelect={() => setSelectedId(el.id)}
+                        onDragMoveSnap={handleDragMoveSnap}
+                        onChange={(attrs) => updateElement(el.id, attrs)}
                       />
                     );
                   }
@@ -1290,6 +1278,73 @@ export function CardEditorClient() {
                   <span>ลบ</span>
                 </button>
               </div>
+
+              {selectedElement.type === "shape" && (
+                <div className="space-y-3 border-t border-[var(--birthday-border)] pt-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label
+                        htmlFor="shape-fill"
+                        className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                      >
+                        สีเติม
+                      </label>
+                      <input
+                        id="shape-fill"
+                        type="color"
+                        value={selectedElement.fill}
+                        onChange={(e) =>
+                          updateElement(selectedElement.id, {
+                            fill: e.target.value,
+                          })
+                        }
+                        className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] p-1"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="shape-stroke"
+                        className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                      >
+                        สีเส้นขอบ
+                      </label>
+                      <input
+                        id="shape-stroke"
+                        type="color"
+                        value={selectedElement.stroke ?? "#3B2A26"}
+                        onChange={(e) =>
+                          updateElement(selectedElement.id, {
+                            stroke: e.target.value,
+                          })
+                        }
+                        className="min-h-[44px] w-full rounded-lg border border-[var(--birthday-border)] p-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="shape-stroke-w"
+                      className="mb-1 flex justify-between text-xs font-medium text-[var(--birthday-text)]"
+                    >
+                      <span>ความหนาขอบ</span>
+                      <span>{selectedElement.strokeWidth ?? 0} px</span>
+                    </label>
+                    <input
+                      id="shape-stroke-w"
+                      type="range"
+                      min={0}
+                      max={20}
+                      value={selectedElement.strokeWidth ?? 0}
+                      onChange={(e) =>
+                        updateElement(selectedElement.id, {
+                          strokeWidth: Number(e.target.value),
+                        })
+                      }
+                      className="w-full accent-[var(--birthday-primary)]"
+                    />
+                  </div>
+                </div>
+              )}
 
               {selectedElement.type === "gif" && (
                 <div className="space-y-3 border-t border-[var(--birthday-border)] pt-3">
