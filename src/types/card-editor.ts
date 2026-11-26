@@ -6,12 +6,18 @@ export type CardBackground =
 
 export type TextAlign = "left" | "center" | "right";
 
+export interface EraserMaskStroke {
+  points: number[][];
+  width: number;
+}
+
 export interface BaseElement {
   id: string;
   name?: string;
   visible?: boolean;
   locked?: boolean;
   opacity?: number;
+  eraserMask?: EraserMaskStroke[];
   x: number;
   y: number;
   rotation: number;

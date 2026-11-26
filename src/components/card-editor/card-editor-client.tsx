@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Stage, Layer, Rect, Circle, Star, Text, Image as KonvaImage, Transformer, Line, Path } from "react-konva";
+import { Stage, Layer, Rect, Circle, Star, Text, Image as KonvaImage, Transformer, Line, Path, Group } from "react-konva";
 import type Konva from "konva";
 import {
   ArrowDown,
@@ -40,6 +40,53 @@ import {
 const STORAGE_KEY = "birthday-card-draft-v1";
 const MAX_ELEMENTS = 50;
 const CANVAS_WIDTH = 800;
+
+function MaskedElementWrapper({
+  id,
+  x,
+  y,
+  eraserMask,
+  children,
+}: {
+  id: string;
+  x: number;
+  y: number;
+  eraserMask?: Array<{ points: number[][]; width: number }>;
+  children: React.ReactNode;
+}) {
+  const groupRef = useRef<Konva.Group>(null);
+
+  useEffect(() => {
+    const node = groupRef.current;
+    if (!node) return;
+    if (eraserMask && eraserMask.length > 0) {
+      node.cache({ pixelRatio: 2 });
+    } else {
+      node.clearCache();
+    }
+  }, [eraserMask, children]);
+
+  if (!eraserMask || eraserMask.length === 0) {
+    return <>{children}</>;
+  }
+
+  return (
+    <Group ref={groupRef} id={`mask-${id}`}>
+      {children}
+      {eraserMask.map((mask, idx) => (
+        <Path
+          key={idx}
+          x={x}
+          y={y}
+          data={buildStrokePathData(mask.points, mask.width, "eraser")}
+          fill="#000000"
+          globalCompositeOperation="destination-out"
+          listening={false}
+        />
+      ))}
+    </Group>
+  );
+}
 
 function getCanvasHeight(ratio: CardRatio): number {
   return ratio === "4:5" ? 1000 : 800;
@@ -782,29 +829,120 @@ export function CardEditorClient() {
             </div>
           </div>
 
-          <div className="mt-5">
-            <h3 className="mb-2 text-sm font-semibold text-[var(--birthday-text)]">
-              สีพื้นหลังการ์ด
+          <div className="mt-5 space-y-3 border-t border-[var(--birthday-border)] pt-4">
+            <h3 className="text-sm font-semibold text-[var(--birthday-text)]">
+              พื้นหลังการ์ด (เลือกสีอิสระ)
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {["#FFF8EE", "#FFFFFF", "#FBE3DC", "#F2B632", "#1F7A6D", "#C8421F"].map(
-                (color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    aria-label={`เลือกสีพื้นหลัง ${color}`}
-                    onClick={() =>
+            <div className="flex gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  commitDesign({
+                    ...design,
+                    background: {
+                      type: "solid",
+                      color:
+                        design.background.type === "solid"
+                          ? design.background.color
+                          : design.background.from,
+                    },
+                  })
+                }
+                className={`min-h-[38px] flex-1 rounded-lg border text-xs font-medium ${
+                  design.background.type === "solid"
+                    ? "border-[var(--birthday-primary)] bg-[var(--birthday-soft)] text-[var(--birthday-primary)]"
+                    : "border-[var(--birthday-border)] text-[var(--birthday-text)]"
+                }`}
+              >
+                สีพื้น
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  commitDesign({
+                    ...design,
+                    background: {
+                      type: "gradient",
+                      from:
+                        design.background.type === "solid"
+                          ? design.background.color
+                          : design.background.from,
+                      to:
+                        design.background.type === "gradient"
+                          ? design.background.to
+                          : "#FBE3DC",
+                    },
+                  })
+                }
+                className={`min-h-[38px] flex-1 rounded-lg border text-xs font-medium ${
+                  design.background.type === "gradient"
+                    ? "border-[var(--birthday-primary)] bg-[var(--birthday-soft)] text-[var(--birthday-primary)]"
+                    : "border-[var(--birthday-border)] text-[var(--birthday-text)]"
+                }`}
+              >
+                ไล่เฉด
+              </button>
+            </div>
+
+            {design.background.type === "solid" ? (
+              <ColorPickerPanel
+                color={design.background.color}
+                onChange={(nextColor) =>
+                  commitDesign({
+                    ...design,
+                    background: { type: "solid", color: nextColor },
+                  })
+                }
+                label="สีพื้นหลัง"
+              />
+            ) : (
+              <div className="space-y-3">
+                <ColorPickerPanel
+                  color={design.background.from}
+                  onChange={(nextColor) =>
+                    commitDesign({
+                      ...design,
+                      background: {
+                        type: "gradient",
+                        from: nextColor,
+                        to:
+                          design.background.type === "gradient"
+                            ? design.background.to
+                            : "#FBE3DC",
+                      },
+                    })
+                  }
+                  label="สีเริ่มต้น (ด้านบน)"
+                />
+                <div className="border-t border-[var(--birthday-border)] pt-3">
+                  <label
+                    htmlFor="bg-grad-to"
+                    className="mb-1 block text-xs font-medium text-[var(--birthday-text)]"
+                  >
+                    สีปลายทาง (ด้านล่าง)
+                  </label>
+                  <input
+                    id="bg-grad-to"
+                    type="color"
+                    value={design.background.to}
+                    onChange={(e) =>
                       commitDesign({
                         ...design,
-                        background: { type: "solid", color },
+                        background: {
+                          type: "gradient",
+                          from:
+                            design.background.type === "gradient"
+                              ? design.background.from
+                              : "#FFF8EE",
+                          to: e.target.value,
+                        },
                       })
                     }
-                    className="h-9 w-9 rounded-full border border-[var(--birthday-border)]"
-                    style={{ backgroundColor: color }}
+                    className="h-11 w-full cursor-pointer rounded-lg border border-[var(--birthday-border)] p-1"
                   />
-                )
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -863,35 +1001,103 @@ export function CardEditorClient() {
               onPointerUp={() => {
                 if (!isDrawingMode || !activePoints) return;
                 if (activePoints.length > 1) {
-                  const strokeCount = design.elements.filter(
-                    (el) => el.type === "stroke"
-                  ).length;
-                  if (strokeCount >= 200) {
-                    setStatusMsg("วาดได้สูงสุด 200 เส้นต่อการ์ด");
-                  } else {
-                    const effectiveOpacity =
-                      drawTool === "highlighter"
-                        ? Math.min(drawOpacity, 0.45)
-                        : drawTool === "pencil"
-                          ? Math.min(drawOpacity, 0.85)
-                          : drawTool === "eraser"
-                            ? 1
-                            : drawOpacity;
-                    addElement({
-                      id: `str-${Date.now()}`,
-                      type: "stroke",
-                      tool: drawTool,
-                      points: activePoints,
-                      color: drawTool === "eraser" ? "#000000" : drawColor,
-                      width: drawWidth,
-                      opacity: effectiveOpacity,
-                      x: 0,
-                      y: 0,
-                      rotation: 0,
-                      scaleX: 1,
-                      scaleY: 1,
+                  if (drawTool === "eraser") {
+                    // ลบทั้งเส้นวาด (stroke layer) และสร้าง eraserMask บน Text/Shape/Image ที่ลากผ่าน
+                    const xs = activePoints.map((p) => p[0]);
+                    const ys = activePoints.map((p) => p[1]);
+                    const minX = Math.min(...xs) - drawWidth / 2;
+                    const maxX = Math.max(...xs) + drawWidth / 2;
+                    const minY = Math.min(...ys) - drawWidth / 2;
+                    const maxY = Math.max(...ys) + drawWidth / 2;
+
+                    const nextElements = design.elements.map((el) => {
+                      if (
+                        el.type === "stroke" ||
+                        el.locked ||
+                        el.visible === false
+                      ) {
+                        return el;
+                      }
+                      const w =
+                        "width" in el ? el.width * Math.abs(el.scaleX) : 120;
+                      const h =
+                        "height" in el
+                          ? el.height * Math.abs(el.scaleY)
+                          : el.type === "text"
+                            ? el.fontSize * 2.5
+                            : 120;
+                      const intersects =
+                        el.x <= maxX &&
+                        el.x + w >= minX &&
+                        el.y <= maxY &&
+                        el.y + h >= minY;
+                      if (!intersects) return el;
+
+                      const localPoints = activePoints.map(([px, py, pr]) => [
+                        (px - el.x) / (el.scaleX || 1),
+                        (py - el.y) / (el.scaleY || 1),
+                        pr,
+                      ]);
+                      const prevMask = el.eraserMask ?? [];
+                      return {
+                        ...el,
+                        eraserMask: [
+                          ...prevMask.slice(-29),
+                          { points: localPoints, width: drawWidth },
+                        ],
+                      };
                     });
+
+                    const strokeCount = nextElements.filter(
+                      (el) => el.type === "stroke"
+                    ).length;
+                    if (strokeCount < 200) {
+                      nextElements.push({
+                        id: `str-${Date.now()}`,
+                        type: "stroke",
+                        tool: "eraser",
+                        points: activePoints,
+                        color: "#000000",
+                        width: drawWidth,
+                        opacity: 1,
+                        x: 0,
+                        y: 0,
+                        rotation: 0,
+                        scaleX: 1,
+                        scaleY: 1,
+                      });
+                    }
+                    commitDesign({ ...design, elements: nextElements });
                     setSelectedId(null);
+                  } else {
+                    const strokeCount = design.elements.filter(
+                      (el) => el.type === "stroke"
+                    ).length;
+                    if (strokeCount >= 200) {
+                      setStatusMsg("วาดได้สูงสุด 200 เส้นต่อการ์ด");
+                    } else {
+                      const effectiveOpacity =
+                        drawTool === "highlighter"
+                          ? Math.min(drawOpacity, 0.45)
+                          : drawTool === "pencil"
+                            ? Math.min(drawOpacity, 0.85)
+                            : drawOpacity;
+                      addElement({
+                        id: `str-${Date.now()}`,
+                        type: "stroke",
+                        tool: drawTool,
+                        points: activePoints,
+                        color: drawColor,
+                        width: drawWidth,
+                        opacity: effectiveOpacity,
+                        x: 0,
+                        y: 0,
+                        rotation: 0,
+                        scaleX: 1,
+                        scaleY: 1,
+                      });
+                      setSelectedId(null);
+                    }
                   }
                 }
                 setActivePoints(null);
@@ -931,55 +1137,69 @@ export function CardEditorClient() {
                   if (el.visible === false) return null;
                   if (el.type === "text") {
                     return (
-                      <Text
+                      <MaskedElementWrapper
                         key={el.id}
                         id={el.id}
-                        text={el.text}
                         x={el.x}
                         y={el.y}
-                        width={el.width}
-                        fontSize={el.fontSize}
-                        fontFamily={el.fontFamily}
-                        fill={el.fill}
-                        fontStyle={el.fontStyle}
-                        align={el.align}
-                        rotation={el.rotation}
-                        scaleX={el.scaleX}
-                        scaleY={el.scaleY}
-                        draggable
-                        onClick={() => setSelectedId(el.id)}
-                        onTap={() => setSelectedId(el.id)}
-                        onDragMove={(e) => handleDragMoveSnap(e.target)}
-                        onDragEnd={(e) => {
-                          setSnapLines({});
-                          updateElement(el.id, {
-                            x: e.target.x(),
-                            y: e.target.y(),
-                          });
-                        }}
-                        onTransformEnd={(e) => {
-                          const node = e.target;
-                          updateElement(el.id, {
-                            x: node.x(),
-                            y: node.y(),
-                            rotation: node.rotation(),
-                            scaleX: node.scaleX(),
-                            scaleY: node.scaleY(),
-                          });
-                        }}
-                      />
+                        eraserMask={el.eraserMask}
+                      >
+                        <Text
+                          id={el.id}
+                          text={el.text}
+                          x={el.x}
+                          y={el.y}
+                          width={el.width}
+                          fontSize={el.fontSize}
+                          fontFamily={el.fontFamily}
+                          fill={el.fill}
+                          fontStyle={el.fontStyle}
+                          align={el.align}
+                          rotation={el.rotation}
+                          scaleX={el.scaleX}
+                          scaleY={el.scaleY}
+                          draggable={!isDrawingMode && !el.locked}
+                          onClick={() => !isDrawingMode && setSelectedId(el.id)}
+                          onTap={() => !isDrawingMode && setSelectedId(el.id)}
+                          onDragMove={(e) => handleDragMoveSnap(e.target)}
+                          onDragEnd={(e) => {
+                            setSnapLines({});
+                            updateElement(el.id, {
+                              x: e.target.x(),
+                              y: e.target.y(),
+                            });
+                          }}
+                          onTransformEnd={(e) => {
+                            const node = e.target;
+                            updateElement(el.id, {
+                              x: node.x(),
+                              y: node.y(),
+                              rotation: node.rotation(),
+                              scaleX: node.scaleX(),
+                              scaleY: node.scaleY(),
+                            });
+                          }}
+                        />
+                      </MaskedElementWrapper>
                     );
                   }
                   if (el.type === "shape") {
                     return (
-                      <ShapeNode
+                      <MaskedElementWrapper
                         key={el.id}
-                        el={el}
-                        isDrawingMode={isDrawingMode}
-                        onSelect={() => setSelectedId(el.id)}
-                        onDragMoveSnap={handleDragMoveSnap}
-                        onChange={(attrs) => updateElement(el.id, attrs)}
-                      />
+                        id={el.id}
+                        x={el.x}
+                        y={el.y}
+                        eraserMask={el.eraserMask}
+                      >
+                        <ShapeNode
+                          el={el}
+                          isDrawingMode={isDrawingMode}
+                          onSelect={() => setSelectedId(el.id)}
+                          onDragMoveSnap={handleDragMoveSnap}
+                          onChange={(attrs) => updateElement(el.id, attrs)}
+                        />
+                      </MaskedElementWrapper>
                     );
                   }
                   if (el.type === "image") {
@@ -1241,6 +1461,18 @@ export function CardEditorClient() {
           ) : (
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
+                {selectedElement.eraserMask &&
+                  selectedElement.eraserMask.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        updateElement(selectedElement.id, { eraserMask: [] })
+                      }
+                      className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-[var(--birthday-primary)] px-3 text-xs font-medium text-[var(--birthday-primary)] hover:bg-[var(--birthday-soft)]"
+                    >
+                      ล้างรอยยางลบ
+                    </button>
+                  )}
                 <button
                   type="button"
                   onClick={duplicateSelected}
