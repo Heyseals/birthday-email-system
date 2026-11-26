@@ -36,6 +36,10 @@ const joinSchema = z
     }),
     website: z.string().optional(),
     turnstile_token: z.string().optional(),
+    card_id: z.string().uuid().optional().nullable(),
+    custom_message: z.string().trim().max(500, "ข้อความเพิ่มเติมต้องไม่เกิน 500 ตัวอักษร").optional().nullable(),
+    sender_name: z.string().trim().max(100, "ชื่อผู้ส่งต้องไม่เกิน 100 ตัวอักษร").optional().nullable(),
+    personalized_card_path: z.string().trim().max(300).optional().nullable(),
   })
   .superRefine((data, ctx) => {
     const maxDays = getMaxDaysInMonth(data.birth_month);
@@ -124,8 +128,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { full_name: fullName, email, birth_month: birthMonth, birth_day: birthDay } =
-    parsed.data;
+  const {
+    full_name: fullName,
+    email,
+    birth_month: birthMonth,
+    birth_day: birthDay,
+    card_id: cardId,
+    custom_message: customMessage,
+    sender_name: senderName,
+    personalized_card_path: personalizedCardPath,
+  } = parsed.data;
 
   const adminClient = createAdminClient();
 
@@ -169,6 +181,10 @@ export async function POST(request: NextRequest) {
       status: "pending",
       confirm_token: confirmToken,
       confirm_token_expires_at: expiresAt,
+      card_id: cardId ?? null,
+      custom_message: customMessage || null,
+      sender_name: senderName || null,
+      personalized_card_path: personalizedCardPath || null,
     })
     .select("id, unsubscribe_token")
     .single();
@@ -194,6 +210,7 @@ export async function POST(request: NextRequest) {
     customerName: fullName,
     confirmUrl,
     unsubscribeUrl,
+    senderName: senderName || null,
     expiresInHours: CONFIRM_EXPIRES_HOURS,
   });
 

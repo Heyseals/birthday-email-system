@@ -70,6 +70,52 @@ function MaskedElementWrapper({
     return <>{children}</>;
   }
 
+  const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
   return (
     <Group ref={groupRef} id={`mask-${id}`}>
       {children}
@@ -117,6 +163,52 @@ function URLImage({
   }, [element.src]);
 
   if (!img) return null;
+
+  const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
 
   return (
     <KonvaImage
@@ -172,6 +264,12 @@ export function CardEditorClient() {
   const [snapLines, setSnapLines] = useState<{ x?: number; y?: number }>({});
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [stageScale, setStageScale] = useState(0.5);
+  const [previewNameMode, setPreviewNameMode] = useState(false);
+  const [savedCardId, setSavedCardId] = useState<string | null>(null);
+  const [cardTitle, setCardTitle] = useState("การ์ดอวยพรวันเกิด");
+  const [isPublicCard, setIsPublicCard] = useState(true);
+  const [isSavingCard, setIsSavingCard] = useState(false);
+  const [saveSuccessUrl, setSaveSuccessUrl] = useState<string | null>(null);
   const [isGifPlaying, setIsGifPlaying] = useState(() => {
     if (typeof window !== "undefined") {
       return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -211,7 +309,53 @@ export function CardEditorClient() {
     link.href =
       "https://fonts.googleapis.com/css2?family=Itim&family=Kanit:wght@400;600&family=Mali:wght@400;600&family=Prompt:wght@400;600&family=Sarabun:wght@400;600&display=swap";
     document.head.appendChild(link);
-    return () => {
+    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return () => {
       document.head.removeChild(link);
     };
   }, []);
@@ -235,7 +379,53 @@ export function CardEditorClient() {
     };
     updateScale();
     window.addEventListener("resize", updateScale);
-    return () => window.removeEventListener("resize", updateScale);
+    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return () => window.removeEventListener("resize", updateScale);
   }, []);
 
   // Attach Transformer
@@ -351,7 +541,53 @@ export function CardEditorClient() {
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return () => window.removeEventListener("keydown", onKeyDown);
   }, [
     deleteSelected,
     design.elements,
@@ -531,6 +767,52 @@ export function CardEditorClient() {
 
   const selectedElement = design.elements.find((el) => el.id === selectedId) ?? null;
 
+  const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Action Bar */}
@@ -588,8 +870,59 @@ export function CardEditorClient() {
             <option value="4:5">แนวตั้ง (4:5)</option>
             <option value="1:1">จัตุรัส (1:1)</option>
           </select>
+          <button
+            type="button"
+            onClick={() => setPreviewNameMode((prev) => !prev)}
+            className={`min-h-[44px] rounded-lg border px-3 text-sm font-medium transition ${
+              previewNameMode
+                ? "border-[var(--birthday-primary)] bg-[var(--birthday-soft)] text-[var(--birthday-primary)]"
+                : "border-[var(--birthday-border)] bg-[var(--birthday-surface)] text-[var(--birthday-text)]"
+            }`}
+          >
+            {previewNameMode ? "กำลังดูตัวอย่าง: คุณสมชาย" : "ดูตัวอย่าง {ชื่อ}"}
+          </button>
+          <input
+            type="text"
+            value={cardTitle}
+            onChange={(e) => setCardTitle(e.target.value)}
+            placeholder="ชื่อการ์ด"
+            aria-label="ชื่อการ์ด"
+            className="min-h-[44px] w-40 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm text-[var(--birthday-text)]"
+          />
+          <label className="inline-flex min-h-[44px] cursor-pointer items-center gap-1.5 text-sm text-[var(--birthday-text)]">
+            <input
+              type="checkbox"
+              checked={isPublicCard}
+              onChange={(e) => setIsPublicCard(e.target.checked)}
+              className="h-4 w-4 accent-[var(--birthday-primary)]"
+            />
+            สาธารณะ
+          </label>
+          <button
+            type="button"
+            onClick={handleSaveCard}
+            disabled={isSavingCard}
+            className="min-h-[44px] rounded-lg bg-[var(--birthday-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--birthday-primary-hover)] disabled:opacity-60"
+          >
+            {isSavingCard ? "กำลังบันทึก..." : savedCardId ? "อัปเดตการ์ด" : "บันทึกการ์ด"}
+          </button>
         </div>
       </div>
+
+      {saveSuccessUrl && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
+        >
+          <span>บันทึกการ์ดเรียบร้อยแล้ว!</span>
+          <a
+            href={saveSuccessUrl}
+            className="inline-flex items-center rounded-lg bg-emerald-700 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800"
+          >
+            ใช้การ์ดนี้ส่งอวยพร →
+          </a>
+        </div>
+      )}
 
       {statusMsg && (
         <div
@@ -1136,7 +1469,53 @@ export function CardEditorClient() {
                 {design.elements.map((el) => {
                   if (el.visible === false) return null;
                   if (el.type === "text") {
-                    return (
+                    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return (
                       <MaskedElementWrapper
                         key={el.id}
                         id={el.id}
@@ -1184,7 +1563,53 @@ export function CardEditorClient() {
                     );
                   }
                   if (el.type === "shape") {
-                    return (
+                    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return (
                       <MaskedElementWrapper
                         key={el.id}
                         id={el.id}
@@ -1203,7 +1628,53 @@ export function CardEditorClient() {
                     );
                   }
                   if (el.type === "image") {
-                    return (
+                    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return (
                       <URLImage
                         key={el.id}
                         element={el}
@@ -1216,7 +1687,53 @@ export function CardEditorClient() {
                     );
                   }
                   if (el.type === "gif") {
-                    return (
+                    const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return (
                       <GifCanvasNode
                         key={el.id}
                         element={el}
@@ -1247,7 +1764,53 @@ export function CardEditorClient() {
                     el.width,
                     el.tool
                   );
-                  return (
+                  const handleSaveCard = async () => {
+    if (!stageRef.current) return;
+    setIsSavingCard(true);
+    setStatusMsg(null);
+    setSaveSuccessUrl(null);
+    setSelectedId(null);
+
+    try {
+      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/png")
+      );
+      if (!blob) {
+        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
+      formData.append("canvas_json", JSON.stringify(design));
+      formData.append("is_public", String(isPublicCard));
+      formData.append("image", blob, "card.png");
+
+      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
+      const method = savedCardId ? "PUT" : "POST";
+      const res = await fetch(endpoint, { method, body: formData });
+      const data = (await res.json()) as {
+        ok?: boolean;
+        card?: { id: string };
+        error?: string;
+      };
+
+      if (!res.ok || !data.card?.id) {
+        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
+        return;
+      }
+
+      setSavedCardId(data.card.id);
+      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
+    } catch {
+      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
+    } finally {
+      setIsSavingCard(false);
+    }
+  };
+
+  return (
                     <Path
                       key={el.id}
                       id={el.id}

@@ -8,6 +8,9 @@ export interface SendBirthdayEmailParams {
   customerName: string;
   unsubscribeUrl: string;
   isTest: boolean;
+  cardImageUrl?: string | null;
+  customMessage?: string | null;
+  senderName?: string | null;
 }
 
 export interface SendConfirmEmailParams {
@@ -15,6 +18,7 @@ export interface SendConfirmEmailParams {
   customerName: string;
   confirmUrl: string;
   unsubscribeUrl?: string;
+  senderName?: string | null;
   expiresInHours?: number;
 }
 
@@ -99,11 +103,17 @@ export async function sendBirthdayEmail({
   customerName,
   unsubscribeUrl,
   isTest,
+  cardImageUrl,
+  customMessage,
+  senderName,
 }: SendBirthdayEmailParams): Promise<SendBirthdayEmailResult> {
   const { subject, html, text } = buildBirthdayEmail({
     fullName: customerName,
     unsubscribeUrl,
     isTest,
+    cardImageUrl,
+    customMessage,
+    senderName,
   });
 
   return sendViaResend({
@@ -121,12 +131,14 @@ export async function sendConfirmEmail({
   customerName,
   confirmUrl,
   unsubscribeUrl,
+  senderName,
   expiresInHours = 24,
 }: SendConfirmEmailParams): Promise<SendBirthdayEmailResult> {
   const { subject, html, text } = buildConfirmEmail({
     fullName: customerName,
     confirmUrl,
     unsubscribeUrl,
+    senderName,
     expiresInHours,
   });
 

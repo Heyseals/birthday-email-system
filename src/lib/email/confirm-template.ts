@@ -11,6 +11,7 @@ export interface ConfirmEmailInput {
   fullName: string;
   confirmUrl: string;
   unsubscribeUrl?: string;
+  senderName?: string | null;
   expiresInHours?: number;
 }
 
@@ -27,12 +28,16 @@ export function buildConfirmEmail({
   fullName,
   confirmUrl,
   unsubscribeUrl,
+  senderName,
   expiresInHours = 24,
 }: ConfirmEmailInput): ConfirmEmailContent {
   const safeName = escapeHtml(fullName);
   const safeUrl = escapeHtml(confirmUrl);
   const safeUnsubscribeUrl = unsubscribeUrl ? escapeHtml(unsubscribeUrl) : null;
-  const subject = "ยืนยันการลงทะเบียนรับอีเมลอวยพรวันเกิด";
+  const safeSenderName = senderName?.trim() ? escapeHtml(senderName.trim()) : null;
+  const subject = safeSenderName
+    ? `${senderName!.trim()} ต้องการส่งการ์ดอวยพรวันเกิดให้คุณ — ยืนยันการรับอีเมล`
+    : "ยืนยันการลงทะเบียนรับอีเมลอวยพรวันเกิด";
 
   const html = `<!DOCTYPE html>
 <html lang="th">
@@ -71,7 +76,11 @@ export function buildConfirmEmail({
                   สวัสดีคุณ <strong>${safeName}</strong>
                 </p>
                 <p style="margin:0 0 22px;font-size:15px;line-height:1.7;color:#3B2A26;">
-                  ขอบคุณที่ลงทะเบียนรับคำอวยพรวันเกิดกับเรา กรุณากดปุ่มด้านล่างเพื่อยืนยันอีเมลของคุณให้เรียบร้อย
+                  ${
+                    safeSenderName
+                      ? `<strong>${safeSenderName}</strong> ต้องการส่งการ์ดอวยพรวันเกิดให้คุณ กรุณากดปุ่มด้านล่างเพื่อยืนยันความยินยอมรับอีเมลอวยพรวันเกิด`
+                      : "ขอบคุณที่ลงทะเบียนรับคำอวยพรวันเกิดกับเรา กรุณากดปุ่มด้านล่างเพื่อยืนยันอีเมลของคุณให้เรียบร้อย"
+                  }
                 </p>
                 <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 22px;">
                   <tr>

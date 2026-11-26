@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
   // --- 4. Query ลูกค้าที่ตรงวันเกิดวันนี้ (status = 'confirmed' และไม่ unsubscribed) ---
   const { data: mainCustomers, error: mainErr } = await supabase
     .from("customers")
-    .select("id, full_name, email, birth_month, birth_day, unsubscribe_token")
+    .select(
+      "id, full_name, email, birth_month, birth_day, unsubscribe_token, card_id, custom_message, sender_name, personalized_card_path"
+    )
     .eq("status", "confirmed")
     .eq("consent_given", true)
     .eq("unsubscribed", false)
@@ -75,7 +77,9 @@ export async function GET(request: NextRequest) {
   if (includeFeb29) {
     const { data: feb29Data } = await supabase
       .from("customers")
-      .select("id, full_name, email, birth_month, birth_day, unsubscribe_token")
+      .select(
+        "id, full_name, email, birth_month, birth_day, unsubscribe_token, card_id, custom_message, sender_name, personalized_card_path"
+      )
       .eq("status", "confirmed")
       .eq("consent_given", true)
       .eq("unsubscribed", false)
@@ -85,6 +89,28 @@ export async function GET(request: NextRequest) {
   }
 
   const allEligible = [...(mainCustomers ?? []), ...feb29Customers];
+
+  // ดึง image_path ของการ์ดที่เกี่ยวข้อง (ถ้ามี)
+  const cardIds = Array.from(
+    new Set(
+      allEligible
+        .map((c) => c.card_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  const cardImageMap = new Map<string, string>();
+  if (cardIds.length > 0) {
+    const { data: cardsData } = await supabase
+      .from("cards")
+      .select("id, image_path")
+      .in("id", cardIds);
+    for (const card of cardsData ?? []) {
+      if (card.image_path) {
+        cardImageMap.set(card.id, card.image_path);
+      }
+    }
+  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "") ?? "";
 
   // --- 5. ส่งอีเมลเป็น batch (ป้องกันส่งซ้ำด้วย email_log + retry เมื่อล้มเหลว) ---
   let sentCount = 0;
@@ -121,12 +147,24 @@ export async function GET(request: NextRequest) {
           };
         }
 
+        const storagePath =
+          customer.personalized_card_path ||
+          (customer.card_id ? cardImageMap.get(customer.card_id) : null) ||
+          null;
+        const cardImageUrl =
+          storagePath && supabaseUrl
+            ? `${supabaseUrl}/storage/v1/object/public/cards/${storagePath}`
+            : null;
+
         const unsubscribeUrl = `${siteUrl}/unsubscribe?token=${customer.unsubscribe_token}`;
         const sendResult = await sendWithRetry({
           to: customer.email,
           customerName: customer.full_name,
           isTest: false,
           unsubscribeUrl,
+          cardImageUrl,
+          customMessage: customer.custom_message,
+          senderName: customer.sender_name,
         });
 
         const emailStatus: "sent" | "failed" = sendResult.ok

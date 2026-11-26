@@ -11,6 +11,9 @@ export interface BirthdayEmailInput {
   fullName: string;
   unsubscribeUrl: string;
   isTest?: boolean;
+  cardImageUrl?: string | null;
+  customMessage?: string | null;
+  senderName?: string | null;
 }
 
 export interface BirthdayEmailContent {
@@ -23,11 +26,21 @@ export function buildBirthdayEmail({
   fullName,
   unsubscribeUrl,
   isTest = false,
+  cardImageUrl,
+  customMessage,
+  senderName,
 }: BirthdayEmailInput): BirthdayEmailContent {
   const safeName = escapeHtml(fullName);
   const safeUrl = escapeHtml(unsubscribeUrl);
+  const safeCardUrl = cardImageUrl ? escapeHtml(cardImageUrl) : null;
+  const safeCustomMessage = customMessage?.trim()
+    ? escapeHtml(customMessage.trim()).replace(/\n/g, "<br />")
+    : null;
+  const safeSenderName = senderName?.trim() ? escapeHtml(senderName.trim()) : null;
   const prefix = isTest ? "[TEST] " : "";
-  const subject = `${prefix}สุขสันต์วันเกิดคุณ ${fullName}`;
+  const subject = safeSenderName
+    ? `${prefix}สุขสันต์วันเกิดคุณ ${fullName} จาก ${senderName!.trim()}`
+    : `${prefix}สุขสันต์วันเกิดคุณ ${fullName}`;
 
   const testBannerHtml = isTest
     ? `<div style="margin-bottom:16px;padding:10px 14px;border-radius:8px;background-color:#fef3c7;border:1px solid #f59e0b;color:#92400e;font-size:13px;font-weight:600;">
@@ -60,6 +73,20 @@ export function buildBirthdayEmail({
                 <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">
                   สวัสดีคุณ <strong>${safeName}</strong>,
                 </p>
+                ${
+                  safeCardUrl
+                    ? `<div style="margin:0 0 20px;text-align:center;">
+                        <img src="${safeCardUrl}" alt="การ์ดอวยพรวันเกิด" style="display:block;width:100%;max-width:500px;height:auto;margin:0 auto;border-radius:12px;border:1px solid #e4e4e7;" />
+                      </div>`
+                    : ""
+                }
+                ${
+                  safeCustomMessage
+                    ? `<div style="margin:0 0 18px;padding:16px;border-radius:10px;background-color:#FFF8EE;border:1px solid #E8D9C8;font-size:15px;line-height:1.7;color:#3B2A26;">
+                        ${safeCustomMessage}
+                      </div>`
+                    : ""
+                }
                 <p style="margin:0 0 14px;font-size:15px;line-height:1.7;color:#3f3f46;">
                   เนื่องในโอกาสวันคล้ายวันเกิดของคุณ ขอส่งความปรารถนาดีให้คุณมีสุขภาพแข็งแรง มีความสุข สมหวังในทุกสิ่งที่ตั้งใจ และพบเจอแต่สิ่งดีๆ ตลอดทั้งปีครับ/ค่ะ
                 </p>
@@ -68,7 +95,7 @@ export function buildBirthdayEmail({
                 </p>
                 <p style="margin:0;font-size:14px;font-weight:600;color:#18181b;">
                   ด้วยความปรารถนาดี,<br />
-                  ทีมงานระบบอวยพรวันเกิดอัตโนมัติ
+                  ${safeSenderName ? safeSenderName : "ทีมงานระบบอวยพรวันเกิดอัตโนมัติ"}
                 </p>
               </td>
             </tr>

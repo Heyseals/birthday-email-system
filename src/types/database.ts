@@ -13,6 +13,21 @@ export interface Customer {
   confirm_token: string | null;
   confirm_token_expires_at: string | null;
   manage_token: string;
+  card_id?: string | null;
+  custom_message?: string | null;
+  sender_name?: string | null;
+  personalized_card_path?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CardRecord {
+  id: string;
+  owner_id: string | null;
+  title: string;
+  canvas_json: Record<string, unknown>;
+  image_path: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
 }
