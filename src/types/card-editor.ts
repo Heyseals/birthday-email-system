@@ -8,6 +8,10 @@ export type TextAlign = "left" | "center" | "right";
 
 export interface BaseElement {
   id: string;
+  name?: string;
+  visible?: boolean;
+  locked?: boolean;
+  opacity?: number;
   x: number;
   y: number;
   rotation: number;

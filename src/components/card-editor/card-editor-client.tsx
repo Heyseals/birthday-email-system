@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { GifCanvasNode } from "./gif-canvas-node";
 import { ColorPickerPanel } from "./color-picker-panel";
+import { LayersPanel } from "./layers-panel";
 import { buildStrokePathData } from "./stroke-utils";
 import {
   CARD_TEMPLATES,
@@ -142,6 +143,7 @@ export function CardEditorClient() {
   const [drawOpacity, setDrawOpacity] = useState(1);
   const [activePoints, setActivePoints] = useState<number[][] | null>(null);
   const [eraserCursor, setEraserCursor] = useState<{ x: number; y: number } | null>(null);
+  const [rightTab, setRightTab] = useState<"props" | "layers">("props");
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -433,6 +435,14 @@ export function CardEditorClient() {
     } finally {
       setIsSearchingGif(false);
     }
+  };
+
+  const reorderElement = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const next = [...design.elements];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    commitDesign({ ...design, elements: next });
   };
 
   const moveLayer = (direction: "up" | "down") => {
@@ -872,6 +882,7 @@ export function CardEditorClient() {
 
                 {/* Elements */}
                 {design.elements.map((el) => {
+                  if (el.visible === false) return null;
                   if (el.type === "text") {
                     return (
                       <Text
@@ -1101,13 +1112,50 @@ export function CardEditorClient() {
           </div>
         </div>
 
-        {/* Right Properties Panel */}
+        {/* Right Properties & Layers Panel */}
         <aside className="order-3 rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-4 lg:col-span-3">
-          <h2 className="mb-3 text-sm font-semibold text-[var(--birthday-text)]">
-            {isDrawingMode ? "เครื่องมือวาดรูป" : "คุณสมบัติองค์ประกอบ"}
-          </h2>
+          {!isDrawingMode && (
+            <div className="mb-3 flex gap-1 rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-bg)] p-1">
+              <button
+                type="button"
+                onClick={() => setRightTab("props")}
+                className={`min-h-[38px] flex-1 rounded-md text-xs font-semibold transition-colors ${
+                  rightTab === "props"
+                    ? "bg-[var(--birthday-surface)] text-[var(--birthday-primary)] shadow-xs"
+                    : "text-[var(--birthday-muted)]"
+                }`}
+              >
+                คุณสมบัติ
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightTab("layers")}
+                className={`min-h-[38px] flex-1 rounded-md text-xs font-semibold transition-colors ${
+                  rightTab === "layers"
+                    ? "bg-[var(--birthday-surface)] text-[var(--birthday-primary)] shadow-xs"
+                    : "text-[var(--birthday-muted)]"
+                }`}
+              >
+                เลเยอร์ ({design.elements.length})
+              </button>
+            </div>
+          )}
 
-          {isDrawingMode ? (
+          {isDrawingMode && (
+            <h2 className="mb-3 text-sm font-semibold text-[var(--birthday-text)]">
+              เครื่องมือวาดรูป
+            </h2>
+          )}
+
+          {!isDrawingMode && rightTab === "layers" ? (
+            <LayersPanel
+              elements={design.elements}
+              selectedId={selectedId}
+              onSelect={(id) => setSelectedId(id)}
+              onReorder={reorderElement}
+              onUpdateElement={updateElement}
+            />
+          ) : isDrawingMode ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
                 {(
