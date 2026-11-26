@@ -22,6 +22,8 @@ export function JoinForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -149,6 +151,26 @@ export function JoinForm() {
     }
   };
 
+  const handleResend = async () => {
+    setIsResending(true);
+    setResendMessage(null);
+    try {
+      const res = await fetch("/api/join/resend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+      const data = (await res.json()) as { message?: string; error?: string };
+      setResendMessage(
+        data.message || data.error || "ไม่สามารถส่งอีเมลซ้ำได้ในขณะนี้"
+      );
+    } catch {
+      setResendMessage("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   if (successMessage) {
     return (
       <div
@@ -170,13 +192,38 @@ export function JoinForm() {
             <p className="text-sm leading-relaxed text-[var(--birthday-text)]">
               {successMessage}
             </p>
-            <button
-              type="button"
-              onClick={() => setSuccessMessage(null)}
-              className="mt-2 inline-flex min-h-[44px] items-center text-sm font-medium text-[var(--birthday-primary)] underline underline-offset-4 hover:text-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
-            >
-              ลงทะเบียนอีเมลอื่น
-            </button>
+            {resendMessage && (
+              <p className="text-xs leading-relaxed text-[var(--birthday-muted)]">
+                {resendMessage}
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-4 pt-1">
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={isResending}
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-[var(--birthday-border)] bg-white px-4 py-2 text-sm font-medium text-[var(--birthday-text)] transition hover:bg-[var(--birthday-soft)] disabled:opacity-60"
+              >
+                {isResending ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    กำลังส่ง...
+                  </>
+                ) : (
+                  "ส่งอีเมลยืนยันซ้ำ"
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessMessage(null);
+                  setResendMessage(null);
+                }}
+                className="inline-flex min-h-[44px] items-center text-sm font-medium text-[var(--birthday-primary)] underline underline-offset-4 hover:text-[var(--birthday-primary-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--birthday-primary)]"
+              >
+                ลงทะเบียนอีเมลอื่น
+              </button>
+            </div>
           </div>
         </div>
       </div>

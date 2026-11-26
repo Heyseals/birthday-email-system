@@ -10,6 +10,7 @@ function escapeHtml(value: string): string {
 export interface ConfirmEmailInput {
   fullName: string;
   confirmUrl: string;
+  unsubscribeUrl?: string;
   expiresInHours?: number;
 }
 
@@ -25,10 +26,12 @@ export interface ConfirmEmailContent {
 export function buildConfirmEmail({
   fullName,
   confirmUrl,
+  unsubscribeUrl,
   expiresInHours = 24,
 }: ConfirmEmailInput): ConfirmEmailContent {
   const safeName = escapeHtml(fullName);
   const safeUrl = escapeHtml(confirmUrl);
+  const safeUnsubscribeUrl = unsubscribeUrl ? escapeHtml(unsubscribeUrl) : null;
   const subject = "ยืนยันการลงทะเบียนรับอีเมลอวยพรวันเกิด";
 
   const html = `<!DOCTYPE html>
@@ -86,6 +89,11 @@ export function buildConfirmEmail({
                   หากปุ่มใช้งานไม่ได้ กรุณาคัดลอกลิงก์นี้ไปเปิดในเบราว์เซอร์:<br />
                   <a href="${safeUrl}" style="color:#C8421F;text-decoration:underline;">${safeUrl}</a>
                 </p>
+                ${
+                  safeUnsubscribeUrl
+                    ? `<p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#6B5750;">หากไม่ต้องการรับอีเมลจากเราอีก สามารถ <a href="${safeUnsubscribeUrl}" style="color:#6B5750;text-decoration:underline;">ยกเลิกการรับอีเมลได้ที่นี่</a></p>`
+                    : ""
+                }
               </td>
             </tr>
           </table>

@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { metric } from "@vercel/functions";
+import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendConfirmEmail } from "@/lib/email/resend";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -10,6 +11,42 @@ const NEUTRAL_SUCCESS_MESSAGE =
   "หากอีเมลนี้ยังไม่เคยลงทะเบียนหรือยังรอการยืนยัน ระบบได้ส่งลิงก์ยืนยันไปที่อีเมลของคุณแล้ว กรุณาตรวจสอบกล่องจดหมาย (รวมถึงโฟลเดอร์สแปม)";
 
 const CONFIRM_EXPIRES_HOURS = 24;
+
+const joinSchema = z
+  .object({
+    full_name: z
+      .string()
+      .trim()
+      .min(1, "กรุณากรอกชื่อที่อยากให้เรียก (ไม่เกิน 100 ตัวอักษร)")
+      .max(100, "กรุณากรอกชื่อที่อยากให้เรียก (ไม่เกิน 100 ตัวอักษร)"),
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .max(254, "กรุณากรอกรูปแบบอีเมลให้ถูกต้อง")
+      .email("กรุณากรอกรูปแบบอีเมลให้ถูกต้อง"),
+    birth_month: z.coerce
+      .number()
+      .int()
+      .min(1, "กรุณาเลือกเดือนเกิดให้ถูกต้อง (1–12)")
+      .max(12, "กรุณาเลือกเดือนเกิดให้ถูกต้อง (1–12)"),
+    birth_day: z.coerce.number().int().min(1, "กรุณาเลือกวันเกิดให้ถูกต้อง"),
+    consent_given: z.literal(true, {
+      message: "กรุณาติ๊กยินยอมตามเงื่อนไข PDPA ก่อนลงทะเบียน",
+    }),
+    website: z.string().optional(),
+    turnstile_token: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const maxDays = getMaxDaysInMonth(data.birth_month);
+    if (data.birth_day < 1 || data.birth_day > maxDays) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["birth_day"],
+        message: `กรุณาเลือกวันเกิดให้ถูกต้อง (1–${maxDays})`,
+      });
+    }
+  });
 
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -28,9 +65,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let body: Record<string, unknown>;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "");
+  if (!siteUrl) {
+    return NextResponse.json(
+      { error: "ระบบยังไม่ได้ตั้งค่า NEXT_PUBLIC_SITE_URL" },
+      { status: 500 }
+    );
+  }
+
+  let rawBody: unknown;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    rawBody = await request.json();
   } catch {
     return NextResponse.json(
       { error: "รูปแบบข้อมูลคำขอไม่ถูกต้อง" },
@@ -39,15 +84,25 @@ export async function POST(request: NextRequest) {
   }
 
   // 1. ตรวจ Honeypot: หากบอทกรอกช่องลับ ให้ตอบสำเร็จแบบกลางๆ โดยไม่บันทึกข้อมูล
-  const honeypot = String(body.website ?? "").trim();
+  const honeypot =
+    typeof rawBody === "object" &&
+    rawBody !== null &&
+    "website" in rawBody
+      ? String((rawBody as Record<string, unknown>).website ?? "").trim()
+      : "";
   if (honeypot) {
     metric("join.submit", 1, { outcome: "honeypot" });
     return NextResponse.json({ ok: true, message: NEUTRAL_SUCCESS_MESSAGE });
   }
 
-  // 2. จำกัดจำนวนครั้งต่อ IP (สูงสุด 5 ครั้ง / 15 นาที)
+  // 2. จุดเสียบ Cloudflare Turnstile (ข้ามได้หากยังไม่ได้ตั้ง TURNSTILE_SECRET_KEY)
+  if (process.env.TURNSTILE_SECRET_KEY) {
+    // TODO: ตรวจสอบ turnstile_token กับ https://challenges.cloudflare.com/turnstile/v0/siteverify
+  }
+
+  // 3. จำกัดจำนวนครั้งต่อ IP แบบ persistent บน Supabase (สูงสุด 5 ครั้ง / 15 นาที)
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(`join:${clientIp}`, 5, 15 * 60 * 1000);
+  const rateLimit = await checkRateLimit(`join:${clientIp}`, 5, 15 * 60);
   if (!rateLimit.allowed) {
     metric("join.submit", 1, { outcome: "rate_limited" });
     return NextResponse.json(
@@ -59,58 +114,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. ตรวจสอบ Input ฝั่งเซิร์ฟเวอร์
-  const fullName = String(body.full_name ?? "").trim();
-  const email = String(body.email ?? "")
-    .trim()
-    .toLowerCase();
-  const birthMonth = Number(body.birth_month);
-  const birthDay = Number(body.birth_day);
-  const consentGiven = body.consent_given === true;
-
-  if (!fullName || fullName.length > 100) {
+  // 4. ตรวจสอบ Input ด้วย Zod
+  const parsed = joinSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
     return NextResponse.json(
-      { error: "กรุณากรอกชื่อที่อยากให้เรียก (ไม่เกิน 100 ตัวอักษร)" },
+      { error: firstIssue?.message ?? "ข้อมูลไม่ถูกต้อง" },
       { status: 400 }
     );
   }
 
-  if (
-    !email ||
-    email.length > 254 ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-  ) {
-    return NextResponse.json(
-      { error: "กรุณากรอกรูปแบบอีเมลให้ถูกต้อง" },
-      { status: 400 }
-    );
-  }
-
-  if (!Number.isInteger(birthMonth) || birthMonth < 1 || birthMonth > 12) {
-    return NextResponse.json(
-      { error: "กรุณาเลือกเดือนเกิดให้ถูกต้อง (1–12)" },
-      { status: 400 }
-    );
-  }
-
-  const maxDays = getMaxDaysInMonth(birthMonth);
-  if (!Number.isInteger(birthDay) || birthDay < 1 || birthDay > maxDays) {
-    return NextResponse.json(
-      { error: `กรุณาเลือกวันเกิดให้ถูกต้อง (1–${maxDays})` },
-      { status: 400 }
-    );
-  }
-
-  if (!consentGiven) {
-    return NextResponse.json(
-      { error: "กรุณาติ๊กยินยอมตามเงื่อนไข PDPA ก่อนลงทะเบียน" },
-      { status: 400 }
-    );
-  }
+  const { full_name: fullName, email, birth_month: birthMonth, birth_day: birthDay } =
+    parsed.data;
 
   const adminClient = createAdminClient();
 
-  // 4. กันอีเมลซ้ำ: ตอบข้อความกลางๆ ไม่เปิดเผยว่ามีอีเมลอยู่ในระบบแล้ว
+  // 5. กันอีเมลซ้ำ: ตอบข้อความกลางๆ ไม่เปิดเผยว่ามีอีเมลอยู่ในระบบแล้ว
   const { data: existing, error: lookupError } = await adminClient
     .from("customers")
     .select("id")
@@ -130,7 +149,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, message: NEUTRAL_SUCCESS_MESSAGE });
   }
 
-  // 5. สร้าง confirm_token และบันทึกเป็นสถานะ pending ด้วย Secret Key ฝั่งเซิร์ฟเวอร์
+  // 6. สร้าง confirm_token และบันทึกเป็นสถานะ pending
   const confirmToken = randomBytes(32).toString("hex");
   const now = new Date();
   const expiresAt = new Date(
@@ -151,7 +170,7 @@ export async function POST(request: NextRequest) {
       confirm_token: confirmToken,
       confirm_token_expires_at: expiresAt,
     })
-    .select("id")
+    .select("id, unsubscribe_token")
     .single();
 
   if (insertError) {
@@ -166,16 +185,15 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 6. ส่งอีเมลยืนยัน (Double Opt-in)
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    request.nextUrl.origin;
-  const confirmUrl = `${baseUrl}/confirm?token=${confirmToken}`;
+  // 7. ส่งอีเมลยืนยัน (Double Opt-in)
+  const confirmUrl = `${siteUrl}/confirm?token=${confirmToken}`;
+  const unsubscribeUrl = `${siteUrl}/unsubscribe?token=${inserted.unsubscribe_token}`;
 
   const emailResult = await sendConfirmEmail({
     to: email,
     customerName: fullName,
     confirmUrl,
+    unsubscribeUrl,
     expiresInHours: CONFIRM_EXPIRES_HOURS,
   });
 

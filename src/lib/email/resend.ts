@@ -14,6 +14,7 @@ export interface SendConfirmEmailParams {
   to: string;
   customerName: string;
   confirmUrl: string;
+  unsubscribeUrl?: string;
   expiresInHours?: number;
 }
 
@@ -26,12 +27,14 @@ async function sendViaResend({
   subject,
   html,
   text,
+  unsubscribeUrl,
   mode,
 }: {
   to: string;
   subject: string;
   html: string;
   text: string;
+  unsubscribeUrl?: string;
   mode: "test" | "production" | "confirm";
 }): Promise<SendBirthdayEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -42,10 +45,20 @@ async function sendViaResend({
     };
   }
 
+  const from = process.env.EMAIL_FROM?.trim();
+  if (!from) {
+    return {
+      ok: false,
+      errorMessage: "ยังไม่ได้ตั้งค่า EMAIL_FROM ในไฟล์ .env.local",
+    };
+  }
+
   const resend = new Resend(apiKey);
-  const from =
-    process.env.RESEND_FROM_EMAIL ||
-    "Birthday Wishes <onboarding@resend.dev>";
+  const headers: Record<string, string> = {};
+  if (unsubscribeUrl) {
+    headers["List-Unsubscribe"] = `<${unsubscribeUrl}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
 
   const startedAt = performance.now();
 
@@ -56,6 +69,7 @@ async function sendViaResend({
       subject,
       html,
       text,
+      ...(Object.keys(headers).length > 0 ? { headers } : {}),
     });
 
     if (error || !data?.id) {
@@ -97,6 +111,7 @@ export async function sendBirthdayEmail({
     subject,
     html,
     text,
+    unsubscribeUrl,
     mode: isTest ? "test" : "production",
   });
 }
@@ -105,11 +120,13 @@ export async function sendConfirmEmail({
   to,
   customerName,
   confirmUrl,
+  unsubscribeUrl,
   expiresInHours = 24,
 }: SendConfirmEmailParams): Promise<SendBirthdayEmailResult> {
   const { subject, html, text } = buildConfirmEmail({
     fullName: customerName,
     confirmUrl,
+    unsubscribeUrl,
     expiresInHours,
   });
 
@@ -118,6 +135,7 @@ export async function sendConfirmEmail({
     subject,
     html,
     text,
+    unsubscribeUrl,
     mode: "confirm",
   });
 }

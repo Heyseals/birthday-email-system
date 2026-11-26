@@ -2,12 +2,13 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { AlertCircle, Cake, CircleCheck, Info } from "lucide-react";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { confirmUnsubscribeAction } from "./actions";
 
 // ----------------------------------------------------------------
 // ประเภทของ searchParams ใน Next.js 16
 // ----------------------------------------------------------------
 interface UnsubscribePageProps {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; done?: string; status?: string }>;
 }
 
 // ----------------------------------------------------------------
@@ -18,16 +19,21 @@ interface UnsubscribePageProps {
 async function UnsubscribeContent({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; done?: string; status?: string }>;
 }) {
   // บังคับให้ dynamic render — ต้อง await connection() ก่อน dynamic access
   await connection();
   const params = await searchParams;
   const token = params.token;
 
-  // ไม่มี token
-  if (!token) {
+  if (params.status === "invalid" || !token) {
     return <ErrorCard message="ลิงก์ยกเลิกสมัครรับข้อมูลไม่ถูกต้อง กรุณาตรวจสอบลิงก์อีกครั้ง" />;
+  }
+
+  if (params.done === "error") {
+    return (
+      <ErrorCard message="เกิดข้อผิดพลาดในการยกเลิก กรุณาลองใหม่อีกครั้งหรือติดต่อผู้ดูแลระบบ" />
+    );
   }
 
   const supabase = createAdminClient();
@@ -35,7 +41,7 @@ async function UnsubscribeContent({
   // ค้นหาลูกค้าด้วย token
   const { data: customer, error } = await supabase
     .from("customers")
-    .select("id, name, email, unsubscribed, unsubscribed_at")
+    .select("id, full_name, email, unsubscribed, unsubscribed_at")
     .eq("unsubscribe_token", token)
     .single();
 
@@ -44,46 +50,53 @@ async function UnsubscribeContent({
   }
 
   // ยกเลิกสมัครรับข้อมูลแล้ว
-  if (customer.unsubscribed) {
+  if (customer.unsubscribed || params.done === "success" || params.done === "already") {
     const unsubDate = customer.unsubscribed_at
       ? new Date(customer.unsubscribed_at).toLocaleDateString("th-TH", {
           year: "numeric",
           month: "long",
           day: "numeric",
         })
-      : "ไม่ทราบวันที่";
+      : "วันนี้";
 
     return (
       <StatusCard
-        type="already"
-        title="ยกเลิกรับอีเมลแล้ว"
-        message={`อีเมล ${customer.email} ได้รับการยกเลิกสมัครรับข้อมูลแล้วตั้งแต่วันที่ ${unsubDate}`}
+        type={params.done === "success" ? "success" : "already"}
+        title={
+          params.done === "success"
+            ? "ยกเลิกสมัครรับข้อมูลเรียบร้อย"
+            : "ยกเลิกรับอีเมลแล้ว"
+        }
+        message={
+          params.done === "success"
+            ? `อีเมล ${customer.email} จะไม่ได้รับอีเมลอวยพรวันเกิดจากเราอีกต่อไป`
+            : `อีเมล ${customer.email} ได้รับการยกเลิกสมัครรับข้อมูลแล้วตั้งแต่วันที่ ${unsubDate}`
+        }
       />
     );
   }
 
-  // ยังไม่ได้ยกเลิก → ดำเนินการยกเลิก
-  const { error: updateError } = await supabase
-    .from("customers")
-    .update({
-      unsubscribed: true,
-      unsubscribed_at: new Date().toISOString(),
-    })
-    .eq("id", customer.id);
-
-  if (updateError) {
-    console.error("[unsubscribe] update error:", updateError.message);
-    return (
-      <ErrorCard message="เกิดข้อผิดพลาดในการยกเลิก กรุณาลองใหม่อีกครั้งหรือติดต่อผู้ดูแลระบบ" />
-    );
-  }
-
+  // ยังไม่ได้ยกเลิก → แสดงหน้ายืนยันก่อนยกเลิก (กันบอท/พรีวิวกดยกเลิกเอง)
   return (
-    <StatusCard
-      type="success"
-      title="ยกเลิกสมัครรับข้อมูลเรียบร้อย"
-      message={`อีเมล ${customer.email} จะไม่ได้รับอีเมลอวยพรวันเกิดจากเราอีกต่อไป`}
-    />
+    <div className="rounded-xl border border-stone-700 bg-stone-900/60 p-6 text-center">
+      <Info size={24} className="mx-auto mb-3 text-amber-400" />
+      <h2 className="mb-2 text-lg font-semibold text-white">
+        ยืนยันการยกเลิกรับอีเมล
+      </h2>
+      <p className="mb-5 text-sm leading-relaxed text-stone-300">
+        คุณต้องการยกเลิกการรับอีเมลอวยพรวันเกิดสำหรับ{" "}
+        <span className="font-medium text-white">{customer.email}</span> ใช่หรือไม่?
+      </p>
+      <form action={confirmUnsubscribeAction}>
+        <input type="hidden" name="token" value={token} />
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center rounded-lg bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+        >
+          ยืนยันยกเลิกรับอีเมล
+        </button>
+      </form>
+    </div>
   );
 }
 
