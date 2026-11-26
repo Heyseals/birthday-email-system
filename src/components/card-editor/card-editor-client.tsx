@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { jsPDF } from "jspdf";
 import { Stage, Layer, Rect, Circle, Star, Text, Image as KonvaImage, Transformer, Line, Path, Group } from "react-konva";
+import {
+  THEMED_TEMPLATES,
+  TEMPLATE_THEMES,
+  type TemplateTheme,
+} from "@/lib/card-templates";
 import type Konva from "konva";
 import {
   ArrowDown,
@@ -70,52 +76,6 @@ function MaskedElementWrapper({
     return <>{children}</>;
   }
 
-  const handleSaveCard = async () => {
-    if (!stageRef.current) return;
-    setIsSavingCard(true);
-    setStatusMsg(null);
-    setSaveSuccessUrl(null);
-    setSelectedId(null);
-
-    try {
-      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob((b) => resolve(b), "image/png")
-      );
-      if (!blob) {
-        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
-      formData.append("canvas_json", JSON.stringify(design));
-      formData.append("is_public", String(isPublicCard));
-      formData.append("image", blob, "card.png");
-
-      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
-      const method = savedCardId ? "PUT" : "POST";
-      const res = await fetch(endpoint, { method, body: formData });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        card?: { id: string };
-        error?: string;
-      };
-
-      if (!res.ok || !data.card?.id) {
-        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
-        return;
-      }
-
-      setSavedCardId(data.card.id);
-      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
-    } catch {
-      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
-    } finally {
-      setIsSavingCard(false);
-    }
-  };
-
   return (
     <Group ref={groupRef} id={`mask-${id}`}>
       {children}
@@ -163,52 +123,6 @@ function URLImage({
   }, [element.src]);
 
   if (!img) return null;
-
-  const handleSaveCard = async () => {
-    if (!stageRef.current) return;
-    setIsSavingCard(true);
-    setStatusMsg(null);
-    setSaveSuccessUrl(null);
-    setSelectedId(null);
-
-    try {
-      const canvas = stageRef.current.toCanvas({ pixelRatio: 2 });
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob((b) => resolve(b), "image/png")
-      );
-      if (!blob) {
-        setStatusMsg("ไม่สามารถสร้างไฟล์รูปการ์ดได้");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("title", cardTitle.trim() || "การ์ดอวยพรวันเกิด");
-      formData.append("canvas_json", JSON.stringify(design));
-      formData.append("is_public", String(isPublicCard));
-      formData.append("image", blob, "card.png");
-
-      const endpoint = savedCardId ? `/api/cards/${savedCardId}` : "/api/cards";
-      const method = savedCardId ? "PUT" : "POST";
-      const res = await fetch(endpoint, { method, body: formData });
-      const data = (await res.json()) as {
-        ok?: boolean;
-        card?: { id: string };
-        error?: string;
-      };
-
-      if (!res.ok || !data.card?.id) {
-        setStatusMsg(data.error ?? "ไม่สามารถบันทึกการ์ดได้");
-        return;
-      }
-
-      setSavedCardId(data.card.id);
-      setSaveSuccessUrl(`/join?cardId=${data.card.id}`);
-    } catch {
-      setStatusMsg("เกิดข้อผิดพลาดขณะบันทึกการ์ด");
-    } finally {
-      setIsSavingCard(false);
-    }
-  };
 
   return (
     <KonvaImage
@@ -265,6 +179,10 @@ export function CardEditorClient() {
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [stageScale, setStageScale] = useState(0.5);
   const [previewNameMode, setPreviewNameMode] = useState(false);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+  const [mobileSampleName, setMobileSampleName] = useState("คุณสมชาย");
+  const [mobilePreviewDataUrl, setMobilePreviewDataUrl] = useState<string | null>(null);
+  const [selectedTheme, setSelectedTheme] = useState<"ทั้งหมด" | TemplateTheme>("ทั้งหมด");
   const [savedCardId, setSavedCardId] = useState<string | null>(null);
   const [cardTitle, setCardTitle] = useState("การ์ดอวยพรวันเกิด");
   const [isPublicCard, setIsPublicCard] = useState(true);
@@ -900,6 +818,54 @@ export function CardEditorClient() {
           </label>
           <button
             type="button"
+            onClick={() => {
+              if (!stageRef.current) return;
+              setSelectedId(null);
+              const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 });
+              const link = document.createElement("a");
+              link.download = `${cardTitle.trim() || "birthday-card"}.png`;
+              link.href = dataUrl;
+              link.click();
+            }}
+            className="min-h-[44px] rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-soft)]"
+          >
+            Export PNG
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!stageRef.current) return;
+              setSelectedId(null);
+              const dataUrl = stageRef.current.toDataURL({ pixelRatio: 2 });
+              const width = stageRef.current.width();
+              const height = stageRef.current.height();
+              const pdf = new jsPDF({
+                orientation: width >= height ? "landscape" : "portrait",
+                unit: "px",
+                format: [width, height],
+              });
+              pdf.addImage(dataUrl, "PNG", 0, 0, width, height);
+              pdf.save(`${cardTitle.trim() || "birthday-card"}.pdf`);
+            }}
+            className="min-h-[44px] rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-soft)]"
+          >
+            Export PDF
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (stageRef.current) {
+                setSelectedId(null);
+                setMobilePreviewDataUrl(stageRef.current.toDataURL({ pixelRatio: 2 }));
+              }
+              setShowMobilePreview(true);
+            }}
+            className="min-h-[44px] rounded-lg border border-[var(--birthday-border)] bg-[var(--birthday-surface)] px-3 text-sm font-medium text-[var(--birthday-text)] hover:bg-[var(--birthday-soft)]"
+          >
+            ตัวอย่างมือถือ
+          </button>
+          <button
+            type="button"
             onClick={handleSaveCard}
             disabled={isSavingCard}
             className="min-h-[44px] rounded-lg bg-[var(--birthday-primary)] px-4 text-sm font-semibold text-white transition hover:bg-[var(--birthday-primary-hover)] disabled:opacity-60"
@@ -915,12 +881,24 @@ export function CardEditorClient() {
           className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900"
         >
           <span>บันทึกการ์ดเรียบร้อยแล้ว!</span>
-          <a
-            href={saveSuccessUrl}
-            className="inline-flex items-center rounded-lg bg-emerald-700 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800"
-          >
-            ใช้การ์ดนี้ส่งอวยพร →
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            {isPublicCard && savedCardId && (
+              <a
+                href={`/card/${savedCardId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center rounded-lg border border-emerald-700 bg-white px-3.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
+              >
+                แชร์การ์ด
+              </a>
+            )}
+            <a
+              href={saveSuccessUrl}
+              className="inline-flex items-center rounded-lg bg-emerald-700 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-emerald-800"
+            >
+              ใช้การ์ดนี้ส่งอวยพร →
+            </a>
+          </div>
         </div>
       )}
 
@@ -932,6 +910,50 @@ export function CardEditorClient() {
           {statusMsg}
         </div>
       )}
+
+      {/* คลังเทมเพลตแยกตามธีม */}
+      <div className="rounded-xl border border-[var(--birthday-border)] bg-[var(--birthday-surface)] p-3 space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-xs font-semibold text-[var(--birthday-text)]">
+            คลังเทมเพลตแยกตามธีม (รองรับ {"{ชื่อ}"})
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {TEMPLATE_THEMES.map((theme) => (
+              <button
+                key={theme}
+                type="button"
+                onClick={() => setSelectedTheme(theme)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  selectedTheme === theme
+                    ? "bg-[var(--birthday-primary)] text-white"
+                    : "bg-[var(--birthday-soft)] text-[var(--birthday-text)] hover:bg-[#F5E9D9]"
+                }`}
+              >
+                {theme}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {THEMED_TEMPLATES.filter(
+            (tpl) => selectedTheme === "ทั้งหมด" || tpl.theme === selectedTheme
+          ).map((tpl) => (
+            <button
+              key={tpl.id}
+              type="button"
+              onClick={() => {
+                setDesign(tpl.design);
+                setCardTitle(tpl.name);
+                setSelectedId(null);
+              }}
+              className="shrink-0 rounded-lg border border-[var(--birthday-border)] bg-[#FFFDF9] px-3 py-1.5 text-left text-xs hover:border-[var(--birthday-primary)] hover:bg-[var(--birthday-soft)]"
+            >
+              <span className="font-semibold text-[var(--birthday-text)]">{tpl.name}</span>
+              <span className="ml-1.5 text-[10px] text-[var(--birthday-muted)]">({tpl.theme})</span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Paint-style Ribbon */}
       <PaintRibbon
@@ -2291,6 +2313,54 @@ export function CardEditorClient() {
           )}
         </aside>
       </div>
+      {showMobilePreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md space-y-4 rounded-2xl border border-[#E8D9C8] bg-white p-5 shadow-2xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-[#3B2A26]">
+                ตัวอย่างการ์ดบนมือถือ
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowMobilePreview(false)}
+                className="rounded-lg border border-[#E8D9C8] px-3 py-1 text-xs font-medium text-[#3B2A26]"
+              >
+                ปิด
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-[#7A635D]">
+                ชื่อตัวอย่างสำหรับแทนค่า {"{ชื่อ}"}:
+              </label>
+              <input
+                type="text"
+                value={mobileSampleName}
+                onChange={(e) => setMobileSampleName(e.target.value)}
+                className="w-full rounded-lg border border-[#E8D9C8] px-3 py-1.5 text-sm"
+              />
+            </div>
+
+            <div className="mx-auto w-[300px] overflow-hidden rounded-[28px] border-4 border-[#3B2A26] bg-[#FFFDF9] p-3 shadow-inner space-y-3">
+              <div className="rounded-xl border border-[#E8D9C8] bg-white p-2.5 text-xs space-y-2">
+                <p className="font-semibold text-[#3B2A26]">
+                  ✉️ อีเมล: สุขสันต์วันเกิดคุณ {mobileSampleName || "คุณสมชาย"}
+                </p>
+                {mobilePreviewDataUrl && (
+                  <img
+                    src={mobilePreviewDataUrl}
+                    alt="ตัวอย่างการ์ด"
+                    className="w-full rounded-lg border border-[#E8D9C8]"
+                  />
+                )}
+              </div>
+              <div className="rounded-xl bg-[#E8F5E9] p-2.5 text-[11px] text-[#1B5E20]">
+                💬 แชท/แชร์ลิงก์: {cardTitle || "การ์ดอวยพรวันเกิด"} — ส่งต่อความสุขให้ {mobileSampleName || "คุณสมชาย"}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

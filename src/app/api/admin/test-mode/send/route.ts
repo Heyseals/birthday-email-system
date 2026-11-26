@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { metric } from "@vercel/functions";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAdminUser } from "@/lib/auth/admin";
 import { sendBirthdayEmail } from "@/lib/email/resend";
 
 function getBangkokYear(): number {
@@ -20,6 +21,16 @@ export async function POST(request: NextRequest) {
 
   if (!claims?.sub || claims.is_anonymous === true) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const email = typeof claims.email === "string" ? claims.email : null;
+  const appMetadata =
+    typeof claims.app_metadata === "object" && claims.app_metadata !== null
+      ? (claims.app_metadata as Record<string, unknown>)
+      : null;
+
+  if (!isAdminUser(email, appMetadata)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (!process.env.SUPABASE_SECRET_KEY) {

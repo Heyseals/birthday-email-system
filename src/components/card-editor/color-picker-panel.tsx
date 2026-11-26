@@ -188,9 +188,12 @@ export function ColorPickerPanel({
   const [hexInput, setHexInput] = useState(color);
   const [eyeDropperError, setEyeDropperError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Sync hexInput when external color prop changes without setState-in-effect
+  const [prevColor, setPrevColor] = useState(color);
+  if (color !== prevColor) {
+    setPrevColor(color);
     setHexInput(color);
-  }, [color]);
+  }
 
   const selectColor = (next: string) => {
     onChange(next);

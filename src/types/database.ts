@@ -9,7 +9,8 @@ export interface Customer {
   unsubscribed: boolean;
   unsubscribed_at: string | null;
   unsubscribe_token: string;
-  status: "pending" | "confirmed" | "unsubscribed";
+  status: "pending" | "confirmed" | "paused" | "unsubscribed";
+  owner_id?: string | null;
   confirm_token: string | null;
   confirm_token_expires_at: string | null;
   manage_token: string;

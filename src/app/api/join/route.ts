@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { metric } from "@vercel/functions";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { sendConfirmEmail } from "@/lib/email/resend";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getMaxDaysInMonth } from "@/types/database";
@@ -139,6 +140,10 @@ export async function POST(request: NextRequest) {
     personalized_card_path: personalizedCardPath,
   } = parsed.data;
 
+  const authClient = await createClient();
+  const { data: userData } = await authClient.auth.getUser();
+  const ownerId = userData?.user?.id ?? null;
+
   const adminClient = createAdminClient();
 
   // 5. กันอีเมลซ้ำ: ตอบข้อความกลางๆ ไม่เปิดเผยว่ามีอีเมลอยู่ในระบบแล้ว
@@ -171,6 +176,7 @@ export async function POST(request: NextRequest) {
   const { data: inserted, error: insertError } = await adminClient
     .from("customers")
     .insert({
+      owner_id: ownerId,
       full_name: fullName,
       email,
       birth_month: birthMonth,

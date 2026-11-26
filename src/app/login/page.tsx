@@ -12,7 +12,7 @@ async function LoginCardContent() {
     Boolean(data?.claims?.sub) && data?.claims?.is_anonymous !== true;
 
   if (isAuthenticated) {
-    redirect("/admin");
+    redirect("/dashboard");
   }
 
   return (
@@ -22,10 +22,10 @@ async function LoginCardContent() {
           id="login-heading"
           className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
         >
-          เข้าสู่ระบบแอดมิน
+          เข้าสู่ระบบ
         </h1>
         <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400">
-          ระบบส่งอีเมลอวยพรวันเกิดลูกค้าอัตโนมัติ
+          ระบบส่งอีเมลอวยพรวันเกิดอัตโนมัติ
         </p>
       </div>
       <LoginForm />

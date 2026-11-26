@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { AlertCircle, ArrowUpRight, Cake } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminUser } from "@/lib/auth/admin";
 import { TopBuntingBar } from "@/components/public-shell";
 import { AdminDashboard } from "./admin-dashboard";
 import type { Customer, EmailLog } from "@/types/database";
@@ -33,11 +34,19 @@ async function AdminDashboardContent() {
   const claims = data?.claims;
 
   if (!claims?.sub || claims.is_anonymous === true) {
-    redirect("/login");
+    redirect("/login?next=/admin");
   }
 
   const adminEmail =
-    typeof claims.email === "string" ? claims.email : "แอดมิน";
+    typeof claims.email === "string" ? claims.email : null;
+  const appMetadata =
+    typeof claims.app_metadata === "object" && claims.app_metadata !== null
+      ? (claims.app_metadata as Record<string, unknown>)
+      : null;
+
+  if (!isAdminUser(adminEmail, appMetadata)) {
+    redirect("/dashboard");
+  }
 
   const [{ data: customersData, error: customersError }, { data: logsData, error: logsError }] =
     await Promise.all([

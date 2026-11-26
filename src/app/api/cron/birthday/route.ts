@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { metric } from "@vercel/functions";
+import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBirthdayEmail } from "@/lib/email/resend";
-import { getBangkokToday, isLeapYear } from "@/lib/birthday";
+import { sendLineBirthdayMessage } from "@/lib/line/messaging";
+import { getBangkokDateOffset, getBangkokToday, isLeapYear } from "@/lib/birthday";
 
 const BATCH_SIZE = 10;
 const MAX_RETRIES = 2;
@@ -60,7 +62,7 @@ export async function GET(request: NextRequest) {
   const { data: mainCustomers, error: mainErr } = await supabase
     .from("customers")
     .select(
-      "id, full_name, email, birth_month, birth_day, unsubscribe_token, card_id, custom_message, sender_name, personalized_card_path"
+      "id, full_name, email, birth_month, birth_day, unsubscribe_token, card_id, custom_message, sender_name, personalized_card_path, line_user_id, notify_line"
     )
     .eq("status", "confirmed")
     .eq("consent_given", true)
@@ -78,7 +80,7 @@ export async function GET(request: NextRequest) {
     const { data: feb29Data } = await supabase
       .from("customers")
       .select(
-        "id, full_name, email, birth_month, birth_day, unsubscribe_token, card_id, custom_message, sender_name, personalized_card_path"
+        "id, full_name, email, birth_month, birth_day, unsubscribe_token, card_id, custom_message, sender_name, personalized_card_path, line_user_id, notify_line"
       )
       .eq("status", "confirmed")
       .eq("consent_given", true)
@@ -174,6 +176,15 @@ export async function GET(request: NextRequest) {
 
         if (sendResult.ok) {
           sentCount++;
+          if (customer.notify_line && customer.line_user_id) {
+            await sendLineBirthdayMessage({
+              lineUserId: customer.line_user_id,
+              fullName: customer.full_name,
+              customMessage: customer.custom_message,
+              senderName: customer.sender_name,
+              cardImageUrl,
+            });
+          }
         } else {
           failedCount++;
           console.error(
@@ -207,6 +218,73 @@ export async function GET(request: NextRequest) {
     results.push(...batchResults);
   }
 
+  // --- 6. แจ้งเตือนเจ้าของล่วงหน้า 3 วัน (Atomic update กันส่งซ้ำ) ---
+  let advanceRemindedCount = 0;
+  const target = getBangkokDateOffset(3);
+  const includeTargetFeb29 =
+    target.month === 2 && target.day === 28 && !isLeapYear(target.year);
+
+  const { data: advanceMain } = await supabase
+    .from("customers")
+    .select("id, owner_id, full_name, email, birth_month, birth_day")
+    .eq("status", "confirmed")
+    .not("owner_id", "is", null)
+    .eq("birth_month", target.month)
+    .eq("birth_day", target.day);
+
+  let advanceFeb29: typeof advanceMain = [];
+  if (includeTargetFeb29) {
+    const { data: feb29Adv } = await supabase
+      .from("customers")
+      .select("id, owner_id, full_name, email, birth_month, birth_day")
+      .eq("status", "confirmed")
+      .not("owner_id", "is", null)
+      .eq("birth_month", 2)
+      .eq("birth_day", 29);
+    advanceFeb29 = feb29Adv ?? [];
+  }
+
+  const advanceCandidates = [...(advanceMain ?? []), ...(advanceFeb29 ?? [])];
+  const resendKey = process.env.RESEND_API_KEY?.trim();
+  const emailFrom = process.env.EMAIL_FROM?.trim();
+
+  if (advanceCandidates.length > 0 && resendKey && emailFrom) {
+    const resend = new Resend(resendKey);
+    for (const item of advanceCandidates) {
+      if (!item.owner_id) continue;
+
+      const { data: claimed } = await supabase
+        .from("customers")
+        .update({ advance_reminded_year: target.year })
+        .eq("id", item.id)
+        .or(`advance_reminded_year.is.null,advance_reminded_year.lt.${target.year}`)
+        .select("id")
+        .maybeSingle();
+
+      if (!claimed) continue;
+
+      const { data: ownerData } = await supabase.auth.admin.getUserById(
+        item.owner_id
+      );
+      const ownerEmail = ownerData?.user?.email?.trim().toLowerCase();
+      if (!ownerEmail || ownerEmail === item.email.trim().toLowerCase()) {
+        continue;
+      }
+
+      try {
+        await resend.emails.send({
+          from: emailFrom,
+          to: [ownerEmail],
+          subject: `แจ้งเตือน: อีก 3 วันจะถึงวันเกิดของ ${item.full_name} แล้ว`,
+          html: `<p>สวัสดีครับ/ค่ะ</p><p>อีก 3 วัน (${item.birth_day}/${item.birth_month}) จะถึงวันเกิดของ <strong>${item.full_name}</strong> แล้ว</p><p>สามารถเข้าไปตรวจสอบหรือแก้ไขการ์ดและข้อความอวยพรได้ที่ <a href="${siteUrl}/dashboard">${siteUrl}/dashboard</a></p>`,
+        });
+        advanceRemindedCount++;
+      } catch (err) {
+        console.error("[cron/birthday] advance reminder error:", err);
+      }
+    }
+  }
+
   const durationMs = Date.now() - jobStart;
   metric("birthday.email.sent", sentCount);
   metric("birthday.email.skipped", skippedCount);
@@ -219,6 +297,7 @@ export async function GET(request: NextRequest) {
     sent: sentCount,
     skipped: skippedCount,
     failed: failedCount,
+    advanceReminded: advanceRemindedCount,
     durationMs,
     results,
   });

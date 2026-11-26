@@ -23,6 +23,17 @@ export function getBangkokToday(now: Date = new Date()): BangkokDate {
 }
 
 /**
+ * คืนค่าวันที่ในอนาคต/อดีต (+days) ตามเขตเวลา Asia/Bangkok (GMT+7)
+ */
+export function getBangkokDateOffset(
+  days: number,
+  now: Date = new Date()
+): BangkokDate {
+  const shifted = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+  return getBangkokToday(shifted);
+}
+
+/**
  * ตรวจสอบว่าปี ค.ศ. นั้นเป็นปีอธิกสุรทิน (Leap Year) หรือไม่
  */
 export function isLeapYear(year: number): boolean {

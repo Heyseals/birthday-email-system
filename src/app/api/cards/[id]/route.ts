@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -95,6 +96,10 @@ export async function PUT(
     );
   }
 
+  const authClient = await createClient();
+  const { data: userData } = await authClient.auth.getUser();
+  const ownerId = userData?.user?.id ?? null;
+
   const supabase = createAdminClient();
   const updatePayload: Record<string, unknown> = {
     title: parsed.data.title,
@@ -102,6 +107,9 @@ export async function PUT(
     is_public: parsed.data.is_public,
     updated_at: new Date().toISOString(),
   };
+  if (ownerId) {
+    updatePayload.owner_id = ownerId;
+  }
 
   if (imageFile instanceof File && imageFile.size > 0) {
     if (imageFile.size > MAX_IMAGE_BYTES) {

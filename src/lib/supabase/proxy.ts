@@ -11,7 +11,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (!supabaseUrl || !supabaseKey) {
-    if (pathname.startsWith("/admin")) {
+    if (pathname.startsWith("/admin") || pathname.startsWith("/dashboard")) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.search = "";
@@ -52,18 +52,23 @@ export async function updateSession(request: NextRequest) {
   const isAuthenticated =
     Boolean(claims?.sub) && claims?.is_anonymous !== true;
 
-  if (!isAuthenticated && pathname.startsWith("/admin")) {
+  if (!isAuthenticated && (pathname.startsWith("/admin") || pathname.startsWith("/dashboard"))) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
-    loginUrl.search = "";
+    loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
   if (isAuthenticated && pathname === "/login") {
-    const adminUrl = request.nextUrl.clone();
-    adminUrl.pathname = "/admin";
-    adminUrl.search = "";
-    return NextResponse.redirect(adminUrl);
+    const nextParam = request.nextUrl.searchParams.get("next");
+    const targetPath =
+      nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+        ? nextParam
+        : "/dashboard";
+    const targetUrl = request.nextUrl.clone();
+    targetUrl.pathname = targetPath;
+    targetUrl.search = "";
+    return NextResponse.redirect(targetUrl);
   }
 
   return supabaseResponse;

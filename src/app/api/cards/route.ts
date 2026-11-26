@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -106,6 +107,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const authClient = await createClient();
+  const { data: userData } = await authClient.auth.getUser();
+  const ownerId = userData?.user?.id ?? null;
+
   const supabase = createAdminClient();
   let imagePath: string | null = null;
 
@@ -139,6 +144,7 @@ export async function POST(request: NextRequest) {
   const { data: inserted, error: insertError } = await supabase
     .from("cards")
     .insert({
+      owner_id: ownerId,
       title: parsed.data.title,
       canvas_json: parsed.data.canvas_json,
       image_path: imagePath,

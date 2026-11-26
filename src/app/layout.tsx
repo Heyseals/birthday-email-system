@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Thai } from "next/font/google";
 import { ZoomGuard } from "@/components/zoom-guard";
+import { PreferencesProvider } from "@/components/preferences-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -36,8 +37,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${ibmPlexSansThai.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col overflow-x-clip">
-        <ZoomGuard />
-        {children}
+        <PreferencesProvider>
+          <ZoomGuard />
+          {children}
+        </PreferencesProvider>
       </body>
     </html>
   );

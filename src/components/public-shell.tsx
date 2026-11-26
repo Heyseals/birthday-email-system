@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PreferencesControls } from "./preferences-controls";
 
 interface PublicShellProps {
   children: ReactNode;
@@ -119,6 +120,7 @@ export function PublicShell({
                 สมัครรับอีเมล
               </Link>
             )}
+            <PreferencesControls />
           </nav>
         </div>
       </header>
